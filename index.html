@@ -185,6 +185,36 @@ function initAutocomplete() {
 }
 window.onload = initAutocomplete;
 
+// Función auxiliar para determinar el mensaje según horario de atención
+function obtenerMensajeHoraEstimado() {
+    const ahora = new Date();
+    const fechaEstimado = new Date(ahora.getTime() + 80 * 60000); // +80 minutos
+
+    const HORA_INICIO = 9;
+    const HORA_FIN = 16;
+
+    const dia = fechaEstimado.getDay(); // 0 = domingo, 1 = lunes ... 6 = sábado
+    const hora = fechaEstimado.getHours();
+
+    const diasSemana = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+
+    // Si está dentro del horario de atención (lunes a viernes, 9–16)
+    if (hora >= HORA_INICIO && hora < HORA_FIN && dia >= 1 && dia <= 5) {
+        const horasStr = fechaEstimado.getHours().toString().padStart(2, '0');
+        const minutosStr = fechaEstimado.getMinutes().toString().padStart(2, '0');
+        return `Podemos realizar tu envío a partir de las ${horasStr}:${minutosStr} horas aproximadamente.`;
+    }
+
+    // Fuera del horario → agendar al siguiente día hábil por la mañana
+    let proximoDiaHabil = new Date(fechaEstimado);
+    do {
+        proximoDiaHabil.setDate(proximoDiaHabil.getDate() + 1);
+    } while (proximoDiaHabil.getDay() === 0 || proximoDiaHabil.getDay() === 6); // saltar domingos y sábados
+
+    return `Lo sentimos, fuera de nuestro horario de atención. Podemos agendar tu envío para el día ${diasSemana[proximoDiaHabil.getDay()]} por la mañana.`;
+}
+
+// Función cotizar actualizada
 async function cotizar() {
   const inicio = document.getElementById("inicio").value;
   const destino = document.getElementById("destino").value;
@@ -225,20 +255,18 @@ async function cotizar() {
       <strong>💳 Total:</strong> <strong>$${data.total}</strong>
     `;
 
-    // Calcular hora estimada +80 minutos
-    const ahora = new Date();
-    const fechaEstimado = new Date(ahora.getTime() + 80 * 60000); // 80 minutos
-    const horas = fechaEstimado.getHours().toString().padStart(2, '0');
-    const minutos = fechaEstimado.getMinutes().toString().padStart(2, '0');
-
-    // Agregar línea de atención estimada
-    resultadoDiv.innerHTML += `<br><br>
-      <em>Podemos realizar tu envío a partir de las ${horas}:${minutos} horas aproximadamente.</em>
-    `;
+    // Agregar mensaje de hora estimada o agendar siguiente día hábil
+    resultadoDiv.innerHTML += `<br><br><em>${obtenerMensajeHoraEstimado()}</em>`;
 
     // Preparar WhatsApp
     const telefono = "56942325524"; // reemplaza con tu número
-    const mensaje = `Hola, acepto el servicio de TuMotoExpress.cl.%0AOrigen: ${data.inicio}%0ADestino: ${data.destino}%0ADistancia: ${data.distancia_km.toFixed(2)} km%0ATotal: $${data.total}%0APodemos realizar tu envío a partir de las ${horas}:${minutos} horas`;
+    const mensaje = encodeURIComponent(`Hola, acepto el servicio de TuMotoExpress.cl.
+Origen: ${data.inicio}
+Destino: ${data.destino}
+Distancia: ${data.distancia_km.toFixed(2)} km
+Total: $${data.total}
+${obtenerMensajeHoraEstimado()}`);
+    
     const link = `https://wa.me/${telefono}?text=${mensaje}`;
 
     const btn = document.getElementById("btnWhatsapp");
