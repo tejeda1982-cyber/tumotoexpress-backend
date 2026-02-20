@@ -225,15 +225,15 @@ async function cotizar() {
       <strong>💳 Total:</strong> <strong>$${data.total}</strong>
     `;
 
-    // Calcular hora estimada +90 minutos
+    // Calcular hora estimada +80 minutos
     const ahora = new Date();
-    const fechaEstimado = new Date(ahora.getTime() + 90 * 60000); // 90 minutos
+    const fechaEstimado = new Date(ahora.getTime() + 80 * 60000); // 80 minutos
     const horas = fechaEstimado.getHours().toString().padStart(2, '0');
     const minutos = fechaEstimado.getMinutes().toString().padStart(2, '0');
 
     // Agregar línea de atención estimada
     resultadoDiv.innerHTML += `<br><br>
-      <em>Podemos realizar tu envío a partir de las ${horas}:${minutos} horas.</em>
+      <em>Podemos realizar tu envío a partir de las ${horas}:${minutos} horas aproximadamente.</em>
     `;
 
     // Preparar WhatsApp
