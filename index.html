@@ -238,7 +238,7 @@ async function cotizar() {
 
     // Preparar WhatsApp
     const telefono = "56942325524"; // reemplaza con tu número
-    const mensaje = `Hola, acepto el servicio de TuMotoExpress.%0AOrigen: ${data.inicio}%0ADestino: ${data.destino}%0ADistancia: ${data.distancia_km.toFixed(2)} km%0ATotal: $${data.total}%0APodemos realizar tu envío a partir de las ${horas}:${minutos} horas`;
+    const mensaje = `Hola, acepto el servicio de TuMotoExpress.cl.%0AOrigen: ${data.inicio}%0ADestino: ${data.destino}%0ADistancia: ${data.distancia_km.toFixed(2)} km%0ATotal: $${data.total}%0APodemos realizar tu envío a partir de las ${horas}:${minutos} horas`;
     const link = `https://wa.me/${telefono}?text=${mensaje}`;
 
     const btn = document.getElementById("btnWhatsapp");
