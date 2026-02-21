@@ -202,7 +202,7 @@ function obtenerMensajeHoraEstimado() {
     if (hora >= HORA_INICIO && hora < HORA_FIN && dia >= 1 && dia <= 5) {
         const horasStr = fechaEstimado.getHours().toString().padStart(2, '0');
         const minutosStr = fechaEstimado.getMinutes().toString().padStart(2, '0');
-        return `Podemos realizar tu envío a partir de las ${horasStr}:${minutosStr} horas aproximadamente.`;
+        return `Podemos realizar tu envío a partir de las ${horasStr}:${minutosStr} horas aproximadamente (sujeto a disponibilidad).`;
     }
 
     // Fuera del horario → agendar al siguiente día hábil por la mañana
@@ -211,7 +211,7 @@ function obtenerMensajeHoraEstimado() {
         proximoDiaHabil.setDate(proximoDiaHabil.getDate() + 1);
     } while (proximoDiaHabil.getDay() === 0 || proximoDiaHabil.getDay() === 6); // saltar domingos y sábados
 
-    return `Lo sentimos, nos encontramos fuera de nuestro horario de atención. Podemos agendar tu envío para el día ${diasSemana[proximoDiaHabil.getDay()]} por la mañana.`;
+    return `Lo sentimos, nos encontramos fuera de nuestro horario de atención. Podemos agendar tu envío para el día ${diasSemana[proximoDiaHabil.getDay()]} por la mañana (sujeto a disponibilidad).`;
 }
 
 // Función cotizar actualizada
