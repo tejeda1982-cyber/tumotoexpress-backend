@@ -161,28 +161,23 @@ button:hover {
 </div>
 
 <!-- Google Places Autocomplete -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7ExvZ0pJBjs37LHwbOcWrUqpxg_V78mk&libraries=places&region=CL"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=TU_API_KEY&libraries=places&language=es" defer></script>
 
 <script>
 function initAutocomplete() {
-    const chileBounds = {
-        north: -32.5,
-        south: -34.1,
-        west: -71.0,
-        east: -69.9
-    };
-
+    // Opciones de Autocomplete
     const options = {
-        bounds: chileBounds,
-        strictBounds: true,
+        types: ["geocode", "establishment"], // geocode = direcciones, establishment = lugares
         componentRestrictions: { country: "cl" },
-        fields: ["formatted_address"],
-        types: ["address"]
+        fields: ["formatted_address", "geometry", "name"]
     };
 
+    // Aplica autocomplete a los inputs existentes
     new google.maps.places.Autocomplete(document.getElementById("inicio"), options);
     new google.maps.places.Autocomplete(document.getElementById("destino"), options);
 }
+
+// Inicializa al cargar la ventana
 window.onload = initAutocomplete;
 
 // Función auxiliar para determinar el mensaje según horario de atención
