@@ -102,11 +102,10 @@ button:hover {
   font-size: 15px;
   display: none;
   text-align: left;
-  position: relative; /* para colocar logo encima */
+  position: relative;
   overflow: hidden;
 }
 
-/* Logo de marca de agua dentro del contenedor de resultados - opacidad 1 */
 .resultado::before {
   content: "";
   position: absolute;
@@ -116,13 +115,13 @@ button:hover {
   height: 100%;
   background: url('logo.png') no-repeat 95% center;
   background-size: 140px;
-  opacity: 1; /* ahora más visible */
+  opacity: 1;
   z-index: 0;
 }
 
 .resultado * {
   position: relative;
-  z-index: 1; /* texto y precios arriba del logo */
+  z-index: 1;
 }
 
 .spinner {
@@ -160,56 +159,71 @@ button:hover {
   <button id="btnWhatsapp" class="btn-whatsapp">Aceptar por WhatsApp</button>
 </div>
 
-<!-- Google Places Autocomplete -->
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7ExvZ0pJBjs37LHwbOcWrUqpxg_V78mk&libraries=places&language=es" defer></script>
 
 <script>
 function initAutocomplete() {
-    // Opciones de Autocomplete
     const options = {
-        types: ["geocode", "establishment"], // geocode = direcciones, establishment = lugares
+        types: ["geocode", "establishment"],
         componentRestrictions: { country: "cl" },
         fields: ["formatted_address", "geometry", "name"]
     };
 
-    // Aplica autocomplete a los inputs existentes
     new google.maps.places.Autocomplete(document.getElementById("inicio"), options);
     new google.maps.places.Autocomplete(document.getElementById("destino"), options);
 }
 
-// Inicializa al cargar la ventana
 window.onload = initAutocomplete;
 
-// Función auxiliar para determinar el mensaje según horario de atención
+/* 🔵 FUNCIÓN MODIFICADA SEGÚN TU LÓGICA EXACTA */
 function obtenerMensajeHoraEstimado() {
     const ahora = new Date();
-    const fechaEstimado = new Date(ahora.getTime() + 80 * 60000); // +80 minutos
-
-    const HORA_INICIO = 9;
-    const HORA_FIN = 16;
-
-    const dia = fechaEstimado.getDay(); // 0 = domingo, 1 = lunes ... 6 = sábado
-    const hora = fechaEstimado.getHours();
+    const dia = ahora.getDay(); // 0=Domingo, 1=Lunes ... 6=Sábado
+    const hora = ahora.getHours();
+    const minutos = ahora.getMinutes();
 
     const diasSemana = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 
-    // Si está dentro del horario de atención (lunes a viernes, 9–16)
-    if (hora >= HORA_INICIO && hora < HORA_FIN && dia >= 1 && dia <= 5) {
-        const horasStr = fechaEstimado.getHours().toString().padStart(2, '0');
-        const minutosStr = fechaEstimado.getMinutes().toString().padStart(2, '0');
-        return `Podemos realizar tu envío a partir de las ${horasStr}:${minutosStr} horas aproximadamente (sujeto a disponibilidad).`;
+    function sumar80Minutos(fecha) {
+        return new Date(fecha.getTime() + 80 * 60000);
     }
 
-    // Fuera del horario → agendar al siguiente día hábil por la mañana
-    let proximoDiaHabil = new Date(fechaEstimado);
-    do {
-        proximoDiaHabil.setDate(proximoDiaHabil.getDate() + 1);
-    } while (proximoDiaHabil.getDay() === 0 || proximoDiaHabil.getDay() === 6); // saltar domingos y sábados
+    // 1️⃣ Lunes a jueves entre 00:00 y 08:59
+    if (dia >= 1 && dia <= 4 && hora < 9) {
+        return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario comercial, pero podemos gestionar tu servicio hoy ${diasSemana[dia]} durante la mañana (sujeto a disponibilidad).`;
+    }
 
-    return `Lo sentimos, nos encontramos fuera de nuestro horario de atención. Podemos agendar tu envío para el día ${diasSemana[proximoDiaHabil.getDay()]} por la mañana (sujeto a disponibilidad).`;
+    // 2️⃣ Lunes a viernes entre 09:00 y 15:40
+    if (dia >= 1 && dia <= 5) {
+        if (
+            hora > 9 && hora < 15 ||
+            hora === 9 ||
+            (hora === 15 && minutos <= 40)
+        ) {
+            const fechaEstimado = sumar80Minutos(ahora);
+            const horasStr = fechaEstimado.getHours().toString().padStart(2, '0');
+            const minutosStr = fechaEstimado.getMinutes().toString().padStart(2, '0');
+
+            return `Gracias por cotizar en TuMotoExpress.cl. Podemos gestionar tu servicio a partir de las ${horasStr}:${minutosStr} horas aproximadamente (sujeto a disponibilidad).`;
+        }
+    }
+
+    // 3️⃣ Lunes a jueves después de 15:40
+    if (dia >= 1 && dia <= 4) {
+        const manana = new Date(ahora);
+        manana.setDate(ahora.getDate() + 1);
+        return `Gracias por cotizar en TuMotoExpress.cl En este momento nos encontramos fuera de horario comercial, podemos gestionar tu servicio para mañana ${diasSemana[manana.getDay()]} durante la mañana (sujeto a disponibilidad).`;
+    }
+
+    // 4️⃣ Viernes después de 15:40, sábado o domingo
+    const lunes = new Date(ahora);
+    while (lunes.getDay() !== 1) {
+        lunes.setDate(lunes.getDate() + 1);
+    }
+
+    return `Gracias por cotizar en TuMotoExpress.cl En este momento nos encontramos fuera de horario comercial, podemos gestionar tu servicio para el día lunes durante la mañana (sujeto a disponibilidad).`;
 }
 
-// Función cotizar actualizada
 async function cotizar() {
   const inicio = document.getElementById("inicio").value;
   const destino = document.getElementById("destino").value;
@@ -240,7 +254,6 @@ async function cotizar() {
     const resultadoDiv = document.getElementById("resultado");
     resultadoDiv.style.display = "block";
 
-    // Mostrar resultado básico
     resultadoDiv.innerHTML = `
       <strong>📍 Origen:</strong> ${data.inicio}<br>
       <strong>📍 Destino:</strong> ${data.destino}<br><br>
@@ -250,11 +263,9 @@ async function cotizar() {
       <strong>💳 Total:</strong> <strong>$${data.total}</strong>
     `;
 
-    // Agregar mensaje de hora estimada o agendar siguiente día hábil
     resultadoDiv.innerHTML += `<br><br><em>${obtenerMensajeHoraEstimado()}</em>`;
 
-    // Preparar WhatsApp
-    const telefono = "56942325524"; // reemplaza con tu número
+    const telefono = "56942325524";
     const mensaje = encodeURIComponent(`Hola, acepto el servicio de TuMotoExpress.cl.
 Origen: ${data.inicio}
 Destino: ${data.destino}
