@@ -54,9 +54,8 @@ function calcularPrecio(distancia_km) {
   } else {
   const km_6_a_10 = 4;
   const km_adicionales = distancia_km - 10;
-  neto = 6000 + (km_6_a_10 * 1000) + (km_adicionales * 800);
+  neto = 1;
 }
-
   const iva = Math.round(neto * 0.19);
   const total = neto + iva;
 
