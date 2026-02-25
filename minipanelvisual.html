@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>MiniPanel Visual - TuMotoExpress</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f5f6fa;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 20px;
+}
+.container { background: white; padding: 30px 25px; border-radius: 15px; width: 100%; max-width: 500px; box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
+h2 { text-align: center; margin-bottom: 20px; }
+label { font-weight: bold; display: block; margin-top: 15px; }
+input[type="number"], input[type="text"] { width: 100%; padding: 10px; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+button { margin-top: 15px; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; background-color: #111; color: white; width: 100%; font-size: 16px; }
+.cupon-item { display: flex; align-items: center; margin-top: 10px; }
+.cupon-item input { flex: 1; margin-right: 10px; }
+.cupon-item button { width: 70px; background-color: #e74c3c; }
+#agregarCuponBtn { background-color: #27ae60; }
+</style>
+</head>
+<body>
+<div class="container">
+<h2>MiniPanel Visual - TuMotoExpress</h2>
+<label for="porcentajeAjuste">Porcentaje de ajuste global (%)</label>
+<input type="number" id="porcentajeAjuste" min="0" step="1">
+<label>Cupones:</label>
+<div id="listaCupones"></div>
+<button id="agregarCuponBtn">Agregar cupón</button>
+<button id="guardarCambiosBtn">Guardar cambios</button>
+</div>
+<script>
+const BACKEND_URL = 'https://tumotoexpress-backend-test.onrender.com';
+async function cargarConfig() {
+  const resp = await fetch(`${BACKEND_URL}/config`);
+  const data = await resp.json();
+  document.getElementById('porcentajeAjuste').value = data.porcentajeAjuste;
+  const lista = document.getElementById('listaCupones'); lista.innerHTML = '';
+  for (const clave in data.cupones) agregarCuponElemento(clave, data.cupones[clave]);
+}
+function agregarCuponElemento(codigo='', descuento=0){
+  const lista = document.getElementById('listaCupones');
+  const div = document.createElement('div'); div.className='cupon-item';
+  const inputCodigo = document.createElement('input'); inputCodigo.type='text'; inputCodigo.value=codigo; inputCodigo.placeholder='Código';
+  const inputDescuento = document.createElement('input'); inputDescuento.type='number'; inputDescuento.value=descuento; inputDescuento.min=0; inputDescuento.max=100; inputDescuento.placeholder='%';
+  const btnEliminar = document.createElement('button'); btnEliminar.textContent='Borrar'; btnEliminar.onclick=()=>lista.removeChild(div);
+  div.appendChild(inputCodigo); div.appendChild(inputDescuento); div.appendChild(btnEliminar); lista.appendChild(div);
+}
+document.getElementById('agregarCuponBtn').addEventListener('click',()=>agregarCuponElemento());
+document.getElementById('guardarCambiosBtn').addEventListener('click',async()=>{
+  const porcentaje = parseFloat(document.getElementById('porcentajeAjuste').value)||0;
+  const cupones={};
+  document.querySelectorAll('.cupon-item').forEach(div=>{
+    const inputs=div.querySelectorAll('input');
+    const codigo=inputs[0].value.trim().toUpperCase();
+    const descuento=parseFloat(inputs[1].value)||0;
+    if(codigo) cupones[codigo]=descuento;
+  });
+  const resp = await fetch(`${BACKEND_URL}/config`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ nuevoPorcentaje: porcentaje, nuevosCupones: cupones })});
+  const data = await resp.json();
+  if(data.ok) alert('Cambios guardados correctamente!');
+});
+cargarConfig();
+</script>
+</body>
+</html>

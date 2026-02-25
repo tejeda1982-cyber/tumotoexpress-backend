@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Panel de Configuración - TuMotoExpress.cl</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f5f6fa;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding-top: 40px;
+}
+.container {
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  width: 95%;
+  max-width: 400px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+label {
+  display: block;
+  margin-top: 15px;
+  font-weight: bold;
+}
+input, button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+button {
+  margin-top: 20px;
+  background: #111;
+  color: white;
+  cursor: pointer;
+}
+button:hover { opacity: 0.9; }
+pre {
+  background: #f2f2f2;
+  padding: 10px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-top: 20px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Panel Configuración</h2>
+
+  <label for="porcentaje">Porcentaje de ajuste (%)</label>
+  <input type="number" id="porcentaje" placeholder="Ej: 20">
+
+  <label for="cuponNombre">Nombre del cupón</label>
+  <input type="text" id="cuponNombre" placeholder="Ej: MAMA">
+
+  <label for="cuponValor">Valor del cupón (%)</label>
+  <input type="number" id="cuponValor" placeholder="Ej: 20">
+
+  <button onclick="actualizarConfig()">Actualizar Configuración</button>
+
+  <pre id="resultado">Cargando valores actuales...</pre>
+</div>
+
+<script>
+const baseURL = "https://tumotoexpress-backend.onrender.com"; // Cambia a tu URL de pruebas si aplica
+
+async function cargarConfig() {
+  try {
+    const res = await fetch(`${baseURL}/config`);
+    const data = await res.json();
+    document.getElementById("resultado").textContent = JSON.stringify(data, null, 2);
+    document.getElementById("porcentaje").value = data.porcentajeAjuste;
+  } catch(err) {
+    console.error(err);
+    document.getElementById("resultado").textContent = "Error cargando configuración";
+  }
+}
+
+async function actualizarConfig() {
+  const porcentaje = parseFloat(document.getElementById("porcentaje").value);
+  const cuponNombre = document.getElementById("cuponNombre").value.trim().toUpperCase();
+  const cuponValor = parseFloat(document.getElementById("cuponValor").value);
+
+  const payload = {};
+  if (!isNaN(porcentaje)) payload.nuevoPorcentaje = porcentaje;
+  if (cuponNombre && !isNaN(cuponValor)) {
+    payload.nuevosCupones = {};
+    payload.nuevosCupones[cuponNombre] = cuponValor;
+  }
+
+  try {
+    const res = await fetch(`${baseURL}/config`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    document.getElementById("resultado").textContent = JSON.stringify(data, null, 2);
+    alert("Configuración actualizada!");
+  } catch(err) {
+    console.error(err);
+    alert("Error actualizando configuración");
+  }
+}
+
+// Cargar valores actuales al iniciar
+cargarConfig();
+</script>
+
+</body>
+</html>
