@@ -41,21 +41,24 @@ async function calcularDistancia(inicio, destino) {
 }
 
 // ================================
-// CALCULAR PRECIO SEGÚN DISTANCIA
+// CALCULAR PRECIO SEGÚN TU LÓGICA EXACTA
 // ================================
 function calcularPrecio(distancia_km) {
   let neto = 0;
 
+  // 0 a 6 km → 6000 fijo
   if (distancia_km <= 6) {
     neto = 6000;
-  } else if (distancia_km <= 10) {
-    const km_adicionales = distancia_km - 6;
-    neto = 6000 + (km_adicionales * 1000);
-  } else {
-  const km_6_a_10 = 4;
-  const km_adicionales = distancia_km - 10;
-  neto = 6000 + (km_6_a_10 * 1000) + (km_adicionales * 850);
-}
+  }
+  // 6.1 a 10 km → distancia * 1000
+  else if (distancia_km <= 10) {
+    neto = Math.round(distancia_km * 1000);
+  }
+  // 10.1 en adelante → distancia * 850
+  else {
+    neto = Math.round(distancia_km * 850);
+  }
+
   const iva = Math.round(neto * 0.19);
   const total = neto + iva;
 
@@ -104,7 +107,8 @@ function calcularMensajeHorario() {
   while (lunes.getDay() !== 1) {
     lunes.setDate(lunes.getDate() + 1);
   }
-  return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario comercial, podemos gestionar tu servicio para el día lunes durante la mañana (sujeto a disponibilidad).`;
+
+  return "Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario comercial, podemos gestionar tu servicio para el día lunes durante la mañana (sujeto a disponibilidad).";
 }
 
 // ================================
