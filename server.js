@@ -9,12 +9,9 @@ const app = express();
 
 // ✅ CORS CORREGIDO (único cambio realizado)
 app.use(cors({
-  origin: "https://cotizador.tumotoexpress.cl",
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type"]
+  origin: ["https://cotizador.tumotoexpress.cl"],
+  credentials: false
 }));
-app.options("*", cors());
-
 app.use(express.json());
 app.use(express.static(__dirname));
 
