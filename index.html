@@ -174,7 +174,7 @@ async function cotizar() {
   const spinner = document.getElementById("spinner"); spinner.style.display="block";
 
   try {
-    const response = await fetch("https://tumotoexpress-backend-test.onrender.com/cotizar", {
+    const response = await fetch("/cotizar", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ inicio, destino, cupon: codigo_cupon })
