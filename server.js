@@ -56,7 +56,8 @@ let { tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones } = leerTarif
 async function calcularDistancia(inicio, destino) {
   if (!inicio?.trim() || !destino?.trim()) return null;
 
-  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(inicio)}&destinations=${encodeURIComponent(destino)}&region=CL&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+  // 🔹 MODIFICACIÓN: Usar la nueva key privada para backend
+  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(inicio)}&destinations=${encodeURIComponent(destino)}&region=CL&key=${process.env.GOOGLE_MAPS_BACKEND_KEY}`;
 
   try {
     const resp = await fetch(url);
