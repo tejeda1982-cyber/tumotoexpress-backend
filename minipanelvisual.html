@@ -36,7 +36,9 @@ button { margin-top: 15px; padding: 12px; border: none; border-radius: 10px; fon
 <button id="guardarCambiosBtn">Guardar cambios</button>
 </div>
 <script>
-const BACKEND_URL = 'https://cotizador.tumotoexpress.cl';
+
+const BACKEND_URL = 'https://tumotoexpress-backend.onrender.com';
+
 async function cargarConfig() {
   const resp = await fetch(`${BACKEND_URL}/config`);
   const data = await resp.json();
@@ -44,6 +46,7 @@ async function cargarConfig() {
   const lista = document.getElementById('listaCupones'); lista.innerHTML = '';
   for (const clave in data.cupones) agregarCuponElemento(clave, data.cupones[clave]);
 }
+
 function agregarCuponElemento(codigo='', descuento=0){
   const lista = document.getElementById('listaCupones');
   const div = document.createElement('div'); div.className='cupon-item';
@@ -52,7 +55,9 @@ function agregarCuponElemento(codigo='', descuento=0){
   const btnEliminar = document.createElement('button'); btnEliminar.textContent='Borrar'; btnEliminar.onclick=()=>lista.removeChild(div);
   div.appendChild(inputCodigo); div.appendChild(inputDescuento); div.appendChild(btnEliminar); lista.appendChild(div);
 }
+
 document.getElementById('agregarCuponBtn').addEventListener('click',()=>agregarCuponElemento());
+
 document.getElementById('guardarCambiosBtn').addEventListener('click',async()=>{
   const porcentaje = parseFloat(document.getElementById('porcentajeAjuste').value)||0;
   const cupones={};
@@ -62,10 +67,17 @@ document.getElementById('guardarCambiosBtn').addEventListener('click',async()=>{
     const descuento=parseFloat(inputs[1].value)||0;
     if(codigo) cupones[codigo]=descuento;
   });
-  const resp = await fetch(`${BACKEND_URL}/config`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ nuevoPorcentaje: porcentaje, nuevosCupones: cupones })});
+
+  const resp = await fetch(`${BACKEND_URL}/config`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ nuevoPorcentaje: porcentaje, nuevosCupones: cupones })
+  });
+
   const data = await resp.json();
   if(data.ok) alert('Cambios guardados correctamente!');
 });
+
 cargarConfig();
 </script>
 </body>
