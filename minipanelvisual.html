@@ -36,7 +36,7 @@ button { margin-top: 15px; padding: 12px; border: none; border-radius: 10px; fon
 <button id="guardarCambiosBtn">Guardar cambios</button>
 </div>
 <script>
-const BACKEND_URL = 'https://tumotoexpress-backend-test.onrender.com';
+const BACKEND_URL = 'https://cotizador.tumotoexpress.cl';
 async function cargarConfig() {
   const resp = await fetch(`${BACKEND_URL}/config`);
   const data = await resp.json();
