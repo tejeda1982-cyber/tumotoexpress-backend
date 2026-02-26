@@ -56,8 +56,8 @@ let { tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones } = leerTarif
 async function calcularDistancia(inicio, destino) {
   if (!inicio?.trim() || !destino?.trim()) return null;
 
-  // 🔹 MODIFICACIÓN: Usar la nueva key privada para backend
-  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(inicio)}&destinations=${encodeURIComponent(destino)}&region=CL&key=${process.env.GOOGLE_MAPS_BACKEND_KEY}`;
+  // 🔹 MODIFICACIÓN: Usar Directions API para calcular la ruta más corta
+  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(inicio)}&destination=${encodeURIComponent(destino)}&region=CL&mode=driving&key=${process.env.GOOGLE_MAPS_BACKEND_KEY}`;
 
   try {
     const resp = await fetch(url);
@@ -66,8 +66,8 @@ async function calcularDistancia(inicio, destino) {
       return null;
     }
     const data = await resp.json();
-    if (data.rows?.[0]?.elements?.[0]?.status === "OK") {
-      return data.rows[0].elements[0].distance.value / 1000;
+    if (data.routes?.[0]?.legs?.[0]?.distance?.value != null) {
+      return data.routes[0].legs[0].distance.value / 1000; // distancia en km
     }
     console.error("Google Maps error:", data.status);
     return null;
