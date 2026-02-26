@@ -6,7 +6,15 @@ const cors = require("cors");
 const path = require("path");
 
 const app = express();
-app.use(cors());
+
+// ✅ CORS CORREGIDO (único cambio realizado)
+app.use(cors({
+  origin: "https://cotizador.tumotoexpress.cl",
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"]
+}));
+app.options("*", cors());
+
 app.use(express.json());
 app.use(express.static(__dirname));
 
@@ -42,7 +50,7 @@ function guardarTarifas(tarifas) {
 // ================================
 // VARIABLES DINÁMICAS
 // ================================
-let porcentajeAjuste = 0; // porcentaje global extra
+let porcentajeAjuste = 0;
 let { tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones } = leerTarifas();
 
 // ================================
@@ -61,7 +69,7 @@ async function calcularDistancia(inicio, destino) {
     }
     const data = await resp.json();
     if (data.rows?.[0]?.elements?.[0]?.status === "OK") {
-      return data.rows[0].elements[0].distance.value / 1000; // km
+      return data.rows[0].elements[0].distance.value / 1000;
     }
     console.error("Google Maps error:", data.status);
     return null;
@@ -81,12 +89,10 @@ function calcularPrecio(distancia_km, codigo_cupon = "") {
   else if (distancia_km <= 10) neto = Math.round(distancia_km * km_adicional_6_10);
   else neto = Math.round(distancia_km * km_adicional_10_mas);
 
-  // Ajuste global (%)
   let ajuste = porcentajeAjuste;
   if (ajuste > 1) ajuste = ajuste / 100;
   neto = Math.round(neto * (1 + ajuste));
 
-  // Preparar info de descuento
   let descuentoValor = 0;
   let descuentoTexto = "";
   if (codigo_cupon && cupones[codigo_cupon.toUpperCase()] != null) {
