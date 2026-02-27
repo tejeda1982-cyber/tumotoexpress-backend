@@ -41,16 +41,14 @@ body::before {
 h2 { font-size: 28px; margin-bottom: 25px; color: #111; }
 input { width: 100%; padding: 16px; margin: 12px 0; border-radius: 12px; border: 1px solid #ccc; font-size: 16px; transition: all 0.2s; }
 input:focus { border-color: #111; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
+
 small { display: block; margin-bottom: 10px; color: #555; font-size: 14px; }
 
 button { width: 100%; padding: 16px; margin-top: 10px; border-radius: 12px; border: none; font-size: 16px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
 button:hover { opacity: 0.9; }
 
 .btn-cotizar { background: #111; color: white; }
-.btn-whatsapp, .btn-comprobar, .btn-correo { display: none; margin-top: 15px; }
-.btn-whatsapp { background: #25D366; color: white; }
-.btn-comprobar { background: #007BFF; color: white; }
-.btn-correo { background: #FF5722; color: white; }
+.btn-whatsapp { background: #25D366; color: white; display: none; margin-top: 15px; }
 
 .resultado {
   margin-top: 20px;
@@ -104,85 +102,118 @@ button:hover { opacity: 0.9; }
 
   <div class="spinner" id="spinner"></div>
   <div id="resultado" class="resultado"></div>
-
-  <!-- Campos de cliente -->
-  <input type="text" id="nombreCliente" placeholder="Nombre" style="display:none">
-  <input type="text" id="correoCliente" placeholder="Correo" style="display:none">
-  <input type="text" id="telefonoCliente" placeholder="Teléfono" style="display:none">
-
-  <!-- Botones adicionales -->
-  <button id="btnComprobar" class="btn-comprobar">Comprobar disponibilidad</button>
-  <button id="btnCorreo" class="btn-correo">Enviar correo</button>
   <button id="btnWhatsapp" class="btn-whatsapp">Aceptar por WhatsApp</button>
 </div>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=TU_API_PUBLICA&libraries=places&language=es" defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7ExvZ0pJBjs37LHwbOcWrUqpxg_V78mk&libraries=places&language=es" defer></script>
 
 <script>
 function initAutocomplete() {
-  if(!window.google || !google.maps) return;
   const options = { types:["geocode","establishment"], componentRestrictions:{country:"cl"}, fields:["formatted_address","geometry","name"] };
   new google.maps.places.Autocomplete(document.getElementById("inicio"), options);
   new google.maps.places.Autocomplete(document.getElementById("destino"), options);
 }
 window.onload = initAutocomplete;
 
+/* 🔵 FUNCIÓN MODIFICADA SEGÚN TU LÓGICA EXACTA */
 function obtenerMensajeHoraEstimado() {
-  const ahora = new Date();
-  const dia = ahora.getDay(); 
-  const hora = ahora.getHours();
-  const minutos = ahora.getMinutes();
-  const diasSemana = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
-  function sumar80Minutos(fecha){ return new Date(fecha.getTime()+80*60000); }
+    const ahora = new Date();
+    const dia = ahora.getDay(); // 0=Domingo, 1=Lunes ... 6=Sábado
+    const hora = ahora.getHours();
+    const minutos = ahora.getMinutes();
 
-  if(dia>=1 && dia<=5 && hora<9) return `Fuera de horario, gestionamos hoy ${diasSemana[dia]} en la mañana (sujeto a disponibilidad).`;
-  if(dia>=1 && dia<=5 && ((hora>9 && hora<15) || hora===9 || (hora===15 && minutos<=40))){
-    const fechaEstimado=sumar80Minutos(ahora);
-    return `Podemos gestionar tu servicio a partir de las ${fechaEstimado.getHours().toString().padStart(2,'0')}:${fechaEstimado.getMinutes().toString().padStart(2,'0')} horas (sujeto a disponibilidad).`;
-  }
-  const manana=new Date(ahora); manana.setDate(ahora.getDate()+1);
-  return `Fuera de horario, gestionamos mañana ${diasSemana[manana.getDay()]} en la mañana.`;
+    const diasSemana = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+
+    function sumar80Minutos(fecha) {
+        return new Date(fecha.getTime() + 80 * 60000);
+    }
+
+    // 1️⃣ Lunes a jueves entre 00:00 y 08:59
+    if (dia >= 1 && dia <= 4 && hora < 9) {
+        return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario comercial, pero podemos gestionar tu servicio para hoy ${diasSemana[dia]} durante la mañana (sujeto a disponibilidad).`;
+    }
+
+    // 2️⃣ Lunes a viernes entre 09:00 y 15:40
+    if (dia >= 1 && dia <= 5) {
+        if (
+            hora > 9 && hora < 15 ||
+            hora === 9 ||
+            (hora === 15 && minutos <= 40)
+        ) {
+            const fechaEstimado = sumar80Minutos(ahora);
+            const horasStr = fechaEstimado.getHours().toString().padStart(2, '0');
+            const minutosStr = fechaEstimado.getMinutes().toString().padStart(2, '0');
+
+            return `Gracias por cotizar en TuMotoExpress.cl. Podemos gestionar tu servicio a partir de las ${horasStr}:${minutosStr} horas aproximadamente (sujeto a disponibilidad).`;
+        }
+    }
+
+    // 3️⃣ Lunes a jueves después de 15:40
+    if (dia >= 1 && dia <= 4) {
+        const manana = new Date(ahora);
+        manana.setDate(ahora.getDate() + 1);
+        return `Gracias por cotizar en TuMotoExpress.cl En este momento nos encontramos fuera de horario comercial, podemos gestionar tu servicio para mañana ${diasSemana[manana.getDay()]} durante la mañana (sujeto a disponibilidad).`;
+    }
+
+    // 4️⃣ Viernes después de 15:40, sábado o domingo
+    const lunes = new Date(ahora);
+    while (lunes.getDay() !== 1) {
+        lunes.setDate(lunes.getDate() + 1);
+    }
+
+    return `Gracias por cotizar en TuMotoExpress.cl En este momento nos encontramos fuera de horario comercial, podemos gestionar tu servicio para el día lunes durante la mañana (sujeto a disponibilidad).`;
 }
 
-async function cotizar(){
-  const inicio=document.getElementById("inicio").value;
-  const destino=document.getElementById("destino").value;
-  const codigo_cupon=document.getElementById("codigoCupon").value.trim().toUpperCase();
-  if(!inicio||!destino){ alert("Completa origen y destino"); return; }
+async function cotizar() {
+  const inicio = document.getElementById("inicio").value;
+  const destino = document.getElementById("destino").value;
+  const codigo_cupon = document.getElementById("codigoCupon").value.trim().toUpperCase();
 
-  const spinner=document.getElementById("spinner"); spinner.style.display="block";
+  if(!inicio || !destino){ alert("Completa origen y destino"); return; }
 
-  try{
-    const response=await fetch("/cotizar", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({inicio,destino,cupon:codigo_cupon})});
-    const data=await response.json(); spinner.style.display="none";
+  const spinner = document.getElementById("spinner"); spinner.style.display="block";
+
+  try {
+    const response = await fetch("/cotizar", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ inicio, destino, cupon: codigo_cupon })
+    });
+    const data = await response.json();
+    spinner.style.display="none";
+
     if(data.error){ alert(data.error); return; }
 
-    const resultadoDiv=document.getElementById("resultado"); resultadoDiv.style.display="block";
-    let html=`<strong>📍 Origen:</strong> ${data.inicio}<br>
-              <strong>📍 Destino:</strong> ${data.destino}<br><br>
-              <strong>📏 Distancia:</strong> ${data.distancia_km.toFixed(2)} km<br>
-              <strong>💵 Neto:</strong> $${data.neto}<br>`;
-    if(data.descuentoValor && data.descuentoTexto){
-      html+=`<strong>🎟️ ${data.descuentoTexto}:</strong> -$${data.descuentoValor}<br>
-             <strong>💵 Neto con descuento:</strong> $${data.netoConDescuento}<br>`;
-    }
-    html+=`<strong>🧾 IVA:</strong> $${data.iva}<br>
-           <strong>💳 Total:</strong> <strong>$${data.total}</strong>
-           <br><br><em>${obtenerMensajeHoraEstimado()}</em>`;
-    resultadoDiv.innerHTML=html;
+    const resultadoDiv = document.getElementById("resultado");
+    resultadoDiv.style.display="block";
 
-    // Mostrar campos y botones del cliente
-    document.getElementById("nombreCliente").style.display="block";
-    document.getElementById("correoCliente").style.display="block";
-    document.getElementById("telefonoCliente").style.display="block";
-    document.getElementById("btnComprobar").style.display="block";
-    document.getElementById("btnCorreo").style.display="block";
-    document.getElementById("btnWhatsapp").style.display="block";
+    // Mostrar neto original
+    let html = `
+      <strong>📍 Origen:</strong> ${data.inicio}<br>
+      <strong>📍 Destino:</strong> ${data.destino}<br><br>
+      <strong>📏 Distancia:</strong> ${data.distancia_km.toFixed(2)} km<br>
+      <strong>💵 Neto:</strong> $${data.neto}<br>
+    `;
 
-    // WhatsApp
+    // Mostrar descuento si aplica
+if(data.descuentoValor && data.descuentoTexto) {
+  html += `<strong>🎟️ ${data.descuentoTexto}:</strong> -$${data.descuentoValor}<br>`;
+  html += `<strong>💵 Neto con descuento:</strong> $${data.netoConDescuento}<br>`;
+}
+
+    // IVA y total
+    html += `
+      <strong>🧾 IVA:</strong> $${data.iva}<br>
+      <strong>💳 Total:</strong> <strong>$${data.total}</strong>
+      <br><br><em>${obtenerMensajeHoraEstimado()}</em>
+    `;
+
+    resultadoDiv.innerHTML = html;
+
     const telefono="56942325524";
-    const mensaje = encodeURIComponent(`Hola, acepto el servicio.\nOrigen: ${data.inicio}\nDestino: ${data.destino}\nTotal: $${data.total}`);
-    document.getElementById("btnWhatsapp").onclick=()=>window.open(`https://wa.me/${telefono}?text=${mensaje}`,"_blank");
+    const mensaje = encodeURIComponent(`Hola, acepto el servicio de TuMotoExpress.cl.\nOrigen: ${data.inicio}\nDestino: ${data.destino}\nDistancia: ${data.distancia_km.toFixed(2)} km\nTotal: $${data.total}\n${obtenerMensajeHoraEstimado()}`);
+    const link=`https://wa.me/${telefono}?text=${mensaje}`;
+    const btn = document.getElementById("btnWhatsapp"); btn.style.display="block"; btn.onclick = () => window.open(link,"_blank");
 
   } catch(err){ spinner.style.display="none"; console.error(err); alert("Error al cotizar, revisa tu backend"); }
 }

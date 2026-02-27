@@ -1,79 +1,83 @@
 require("dotenv").config();
-
+const fetch = require('node-fetch');
+const fs = require("fs");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const fs = require("fs");
-
-// Usamos node-fetch v2 compatible con require
-const fetch = require("node-fetch");
-const { Resend } = require("resend");
 
 const app = express();
-const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ================================
-// CONFIGURACIÓN BÁSICA
-// ================================
-app.use(cors());
+// ✅ CORS CORREGIDO (único cambio realizado)
+app.use(cors({
+  origin: ["https://cotizador.tumotoexpress.cl"],
+  credentials: false
+}));
 app.use(express.json());
-
-// 🔥 Servir archivos estáticos
 app.use(express.static(__dirname));
 
-// ================================
-// RUTA PRINCIPAL
-// ================================
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
-
-// Ruta de prueba
-app.get("/health", (req, res) => {
-  res.json({ status: "OK" });
-});
-
-// ================================
-// TARIFAS
-// ================================
 const TARIFAS_FILE = path.join(__dirname, "tarifas.json");
 
+// ================================
+// FUNCIONES PARA LEER Y GUARDAR TARIFAS
+// ================================
 function leerTarifas() {
   try {
     const data = fs.readFileSync(TARIFAS_FILE, "utf8");
-    return JSON.parse(data);
-  } catch {
+    const json = JSON.parse(data);
     return {
-      tarifa_base: 6000,
-      km_adicional_6_10: 1000,
-      km_adicional_10_mas: 850,
-      cupones: {}
+      tarifa_base: json.tarifa_base || 6000,
+      km_adicional_6_10: json.km_adicional_6_10 || 1000,
+      km_adicional_10_mas: json.km_adicional_10_mas || 850,
+      cupones: json.cupones || {}
     };
+  } catch (e) {
+    console.error("Error leyendo tarifas.json:", e.message);
+    return { tarifa_base: 6000, km_adicional_6_10: 1000, km_adicional_10_mas: 850, cupones: {} };
   }
 }
 
-let { tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones } = leerTarifas();
-let porcentajeAjuste = 0;
+function guardarTarifas(tarifas) {
+  try {
+    fs.writeFileSync(TARIFAS_FILE, JSON.stringify(tarifas, null, 2), "utf8");
+  } catch (e) {
+    console.error("Error guardando tarifas.json:", e.message);
+  }
+}
 
 // ================================
-// DISTANCIA GOOGLE
+// VARIABLES DINÁMICAS
+// ================================
+let porcentajeAjuste = 0;
+let { tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones } = leerTarifas();
+
+// ================================
+// CALCULAR DISTANCIA REAL CON GOOGLE MAPS
 // ================================
 async function calcularDistancia(inicio, destino) {
-  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(inicio)}&destination=${encodeURIComponent(destino)}&region=CL&mode=driving&key=${process.env.GOOGLE_MAPS_BACKEND_KEY}`;
+  if (!inicio?.trim() || !destino?.trim()) return null;
+
+  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(inicio)}&destinations=${encodeURIComponent(destino)}&region=CL&key=${process.env.GOOGLE_MAPS_API_KEY}`;
 
   try {
     const resp = await fetch(url);
+    if (!resp.ok) {
+      console.error(`Google Maps error: ${resp.status} ${resp.statusText}`);
+      return null;
+    }
     const data = await resp.json();
-    return data.routes?.[0]?.legs?.[0]?.distance?.value
-      ? data.routes[0].legs[0].distance.value / 1000
-      : null;
-  } catch {
+    if (data.rows?.[0]?.elements?.[0]?.status === "OK") {
+      return data.rows[0].elements[0].distance.value / 1000;
+    }
+    console.error("Google Maps error:", data.status);
+    return null;
+  } catch (e) {
+    console.error("Error al calcular distancia:", e.message);
     return null;
   }
 }
 
 // ================================
-// CALCULAR PRECIO
+// CALCULAR PRECIO SEGÚN TARIFAS DINÁMICAS
 // ================================
 function calcularPrecio(distancia_km, codigo_cupon = "") {
   let neto = 0;
@@ -82,87 +86,113 @@ function calcularPrecio(distancia_km, codigo_cupon = "") {
   else if (distancia_km <= 10) neto = Math.round(distancia_km * km_adicional_6_10);
   else neto = Math.round(distancia_km * km_adicional_10_mas);
 
-  if (porcentajeAjuste > 0) {
-    neto = Math.round(neto * (1 + porcentajeAjuste / 100));
-  }
+  let ajuste = porcentajeAjuste;
+  if (ajuste > 1) ajuste = ajuste / 100;
+  neto = Math.round(neto * (1 + ajuste));
 
   let descuentoValor = 0;
   let descuentoTexto = "";
-
-  if (codigo_cupon && cupones[codigo_cupon.toUpperCase()]) {
-    const porcentaje = cupones[codigo_cupon.toUpperCase()];
-    descuentoValor = Math.round(neto * (porcentaje / 100));
-    descuentoTexto = `Descuento ${codigo_cupon.toUpperCase()} ${porcentaje}%`;
+  if (codigo_cupon && cupones[codigo_cupon.toUpperCase()] != null) {
+    let porcentaje = cupones[codigo_cupon.toUpperCase()];
+    if (porcentaje > 1) porcentaje = porcentaje / 100;
+    descuentoValor = Math.round(neto * porcentaje);
+    descuentoTexto = `Descuento ${codigo_cupon.toUpperCase()} ${Math.round(porcentaje*100)}%`;
   }
 
   const netoConDescuento = neto - descuentoValor;
   const iva = Math.round(netoConDescuento * 0.19);
   const total = netoConDescuento + iva;
 
-  return { neto, descuentoValor, descuentoTexto, netoConDescuento, iva, total };
+  return {
+    neto,
+    descuentoValor,
+    descuentoTexto,
+    netoConDescuento,
+    iva,
+    total
+  };
 }
 
 // ================================
-// ENVIAR CORREO
+// FUNCIÓN HORARIO ESTIMADO
 // ================================
-async function enviarCorreo(cliente, cotizacion) {
-  if (!cliente?.correo) return;
+function calcularMensajeHorario() {
+  const ahora = new Date();
+  const dia = ahora.getDay();
+  const hora = ahora.getHours();
+  const minuto = ahora.getMinutes();
+  const minutosActuales = hora * 60 + minuto;
 
-  try {
-    await resend.emails.send({
-      from: "contacto@tumotoexpress.cl",
-      to: cliente.correo,
-      subject: "Cotización TuMotoExpress",
-      html: `
-        <h2>Hola ${cliente.nombre || "cliente"}</h2>
-        <p><strong>Total:</strong> $${cotizacion.total}</p>
-      `
-    });
-  } catch (err) {
-    console.error("Error enviando correo:", err.message);
+  const diasSemana = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+  const apertura = 9 * 60;
+  const limiteRespuesta = 15 * 60 + 40;
+  const tiempoRespuesta = 80;
+
+  if (dia === 0) return `Gracias por cotizar en TuMotoExpress.cl. Fuera de horario, gestionaremos tu servicio el lunes en la mañana.`;
+  if (dia >= 1 && dia <= 4 && minutosActuales < apertura)
+    return `Fuera de horario comercial, podemos gestionar tu servicio hoy ${diasSemana[dia]} durante la mañana.`;
+  if (dia >= 1 && dia <= 5 && minutosActuales >= apertura && minutosActuales <= limiteRespuesta) {
+    const respuesta = new Date(ahora.getTime() + tiempoRespuesta * 60000);
+    const h = respuesta.getHours().toString().padStart(2,'0');
+    const m = respuesta.getMinutes().toString().padStart(2,'0');
+    return `Podemos gestionar tu servicio a partir de las ${h}:${m} horas aproximadamente.`;
   }
+  if (dia >=1 && dia <=4 && minutosActuales > limiteRespuesta) {
+    const manana = new Date(ahora); manana.setDate(ahora.getDate() + 1);
+    return `Fuera de horario, gestionaremos tu servicio para mañana ${diasSemana[manana.getDay()]} en la mañana.`;
+  }
+  const lunes = new Date(ahora); while(lunes.getDay()!==1) lunes.setDate(lunes.getDate()+1);
+  return `Fuera de horario, gestionaremos tu servicio el lunes en la mañana.`;
 }
 
 // ================================
 // ENDPOINT COTIZAR
 // ================================
-app.post("/cotizar", async (req, res) => {
-  try {
-    const { inicio, destino, cupon, nombre, telefono, correo } = req.body;
+app.post("/cotizar", async (req,res) => {
+  const { inicio, destino, cupon } = req.body;
+  if (!inicio?.trim() || !destino?.trim()) return res.status(400).json({ error: "Faltan direcciones válidas" });
 
-    if (!inicio || !destino) {
-      return res.status(400).json({ error: "Faltan datos" });
+  const distancia_km = await calcularDistancia(inicio,destino);
+  if (distancia_km === null) return res.status(400).json({ error: "No se pudo calcular distancia" });
+
+  const { neto, descuentoValor, descuentoTexto, netoConDescuento, iva, total } = calcularPrecio(distancia_km, cupon);
+
+  res.json({
+    inicio,
+    destino,
+    distancia_km,
+    neto,
+    descuentoValor,
+    descuentoTexto,
+    netoConDescuento,
+    iva,
+    total,
+    mensajeHorario: calcularMensajeHorario()
+  });
+});
+
+// ================================
+// ENDPOINT CONFIG PARA MINIPANEL
+// ================================
+app.get("/config", (req,res) => {
+  res.json({ porcentajeAjuste, cupones, tarifa_base, km_adicional_6_10, km_adicional_10_mas });
+});
+
+app.post("/config", (req,res) => {
+  const { nuevoPorcentaje, nuevosCupones } = req.body;
+  if (typeof nuevoPorcentaje === "number") porcentajeAjuste = nuevoPorcentaje;
+  if (typeof nuevosCupones === "object") {
+    for (let c in nuevosCupones) {
+      const v = nuevosCupones[c];
+      if (!isNaN(v)) cupones[c.toUpperCase()] = v;
     }
-
-    const distancia_km = await calcularDistancia(inicio, destino);
-    if (!distancia_km) {
-      return res.status(400).json({ error: "No se pudo calcular distancia" });
-    }
-
-    const resultado = calcularPrecio(distancia_km, cupon);
-
-    const respuesta = {
-      inicio,
-      destino,
-      distancia_km,
-      ...resultado
-    };
-
-    res.json(respuesta);
-
-    enviarCorreo({ nombre, telefono, correo }, respuesta);
-
-  } catch (error) {
-    console.error("Error en /cotizar:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
   }
+  guardarTarifas({ tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones });
+  res.json({ ok:true, porcentajeAjuste, cupones });
 });
 
 // ================================
 // SERVER
 // ================================
-const PORT = process.env.PORT || 10000;
-
-app.listen(PORT, () => {
-  console.log(`✅ Servidor corriendo en puerto ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT,()=>console.log(`✅ Servidor corriendo en puerto ${PORT}`));
