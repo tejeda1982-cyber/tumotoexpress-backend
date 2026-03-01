@@ -50,7 +50,7 @@ body::after {
 
 .container {
   background: white;
-  padding: 40px 30px;
+  padding: 30px 20px;
   border-radius: 20px;
   width: 95%;
   max-width: 480px;
@@ -61,18 +61,141 @@ body::after {
   margin: 0 20px;
 }
 
-h2 { font-size: 28px; margin-bottom: 25px; color: #111; }
-input { width: 100%; padding: 16px; margin: 12px 0; border-radius: 12px; border: 1px solid #ccc; font-size: 16px; transition: all 0.2s; box-sizing: border-box; }
+h2 { font-size: 24px; margin: 0 0 15px 0; color: #111; }
+
+/* ----- NUEVO CUADRO DE CONDICIONES DE SERVICIO COMPACTO ----- */
+.condiciones-servicio {
+  background: #f8f9fa;
+  border-radius: 30px;
+  padding: 8px 12px 10px 12px;
+  margin: 0 auto 20px auto;
+  max-width: 380px;
+  display: inline-block;
+  border: 1px solid #eaeaea;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.condiciones-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.condiciones-header span {
+  font-size: 16px;
+}
+
+.condiciones-header h3 {
+  margin: 0;
+  color: #555;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* NUEVOS TEXTOS ENCIMA DE CADA ITEM */
+.condiciones-labels {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 2px;
+  padding: 0 5px;
+}
+
+.label-item {
+  font-size: 0.65rem;
+  color: #777;
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  text-align: center;
+  flex: 1;
+}
+
+.condiciones-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.condicion-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: white;
+  padding: 4px 10px;
+  border-radius: 40px;
+  border: 1px solid #f0f0f0;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.condicion-icon {
+  font-size: 14px;
+}
+
+.condicion-texto {
+  color: #444;
+  font-weight: 400;
+}
+
+.condicion-texto strong {
+  color: #ff4500;
+  font-weight: 600;
+  margin: 0 2px;
+}
+
+.condicion-mini {
+  font-size: 0.7rem;
+  color: #888;
+  margin-left: 2px;
+  font-weight: normal;
+}
+
+/* Responsive para el cuadro */
+@media screen and (max-width: 480px) {
+  .condiciones-servicio {
+    width: 100%;
+    padding: 8px 10px 10px 10px;
+  }
+  
+  .condiciones-labels {
+    padding: 0 2px;
+  }
+  
+  .label-item {
+    font-size: 0.6rem;
+  }
+  
+  .condiciones-grid {
+    gap: 4px;
+  }
+  
+  .condicion-item {
+    padding: 3px 8px;
+    font-size: 0.75rem;
+  }
+  
+  .condicion-icon {
+    font-size: 12px;
+  }
+}
+/* ------------------------------------------------- */
+
+input { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #ddd; font-size: 15px; transition: all 0.2s; box-sizing: border-box; }
 input:focus { border-color: #111; box-shadow: 0 0 8px rgba(0,0,0,0.1); outline: none; }
 
-small { display: block; margin-bottom: 10px; color: #555; font-size: 14px; }
+small { display: block; margin-bottom: 8px; color: #666; font-size: 13px; }
 
-button { width: 100%; padding: 16px; margin-top: 10px; border-radius: 12px; border: none; font-size: 16px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+button { width: 100%; padding: 14px; margin-top: 8px; border-radius: 12px; border: none; font-size: 15px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
 button:hover { opacity: 0.9; transform: translateY(-1px); }
 button:active { transform: translateY(0); }
 
 .btn-cotizar { background: #111; color: white; }
-.btn-agregar { background: #4a4a4a; color: white; margin-top: 5px; font-size: 14px; padding: 12px; }
+.btn-agregar { background: #4a4a4a; color: white; margin-top: 5px; font-size: 13px; padding: 10px; }
 .btn-whatsapp { background: #25D366; color: white; display: none; margin-top: 15px; }
 .btn-correo { background: #1a73e8; color: white; display: none; margin-top: 15px; }
 .btn-pagar { background: #ff4500; color: white; display: none; margin-top: 15px; }
@@ -98,24 +221,22 @@ button:active { transform: translateY(0); }
   margin: 15px 0;
   border: 1px solid #e0e0e0;
   overflow: hidden;
-  min-height: 220px;
+  min-height: 200px;
   background-image: url('logo.png');
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 180px auto;  /* Logo más grande */
+  background-size: 150px auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Sin opacity, el logo se ve al 100% */
 }
 
-/* Fondo blanco SEMITRANSPARENTE para el texto - AHORA MÁS TRANSPARENTE PARA DEJAR VER EL LOGO */
 .precios-content {
-  background: rgba(255, 255, 255, 0.7);  /* Más transparente (antes 0.85) para que el logo se vea más */
+  background: rgba(255, 255, 255, 0.7);
   width: 90%;
-  padding: 20px;
+  padding: 15px;
   border-radius: 10px;
-  margin: 20px auto;
+  margin: 15px auto;
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
@@ -123,8 +244,9 @@ button:active { transform: translateY(0); }
 .precio-item {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
+  padding: 6px 0;
   border-bottom: 1px dashed #ddd;
+  font-size: 14px;
 }
 
 .precio-item:last-child {
@@ -134,11 +256,11 @@ button:active { transform: translateY(0); }
 .precio-total {
   display: flex;
   justify-content: space-between;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: bold;
   color: #ff4500;
-  margin-top: 10px;
-  padding-top: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 2px solid #ff4500;
 }
 
@@ -158,10 +280,10 @@ button:active { transform: translateY(0); }
 .destino-adicional {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 10px 0;
+  gap: 8px;
+  margin: 8px 0;
   background: #f8f9fa;
-  padding: 10px;
+  padding: 8px;
   border-radius: 8px;
   border-left: 3px solid #ff4500;
 }
@@ -170,15 +292,16 @@ button:active { transform: translateY(0); }
   flex: 1;
   margin: 0;
   padding: 12px;
+  font-size: 14px;
 }
 
 .btn-eliminar {
   width: auto;
-  padding: 10px 15px;
+  padding: 8px 12px;
   margin: 0;
   background: #dc3545;
   color: white;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 /* Estilo para el resumen de destinos */
@@ -190,27 +313,28 @@ button:active { transform: translateY(0); }
 .destinos-lista li {
   margin: 5px 0;
   color: #333;
+  font-size: 14px;
 }
 
 .tramo-resumen {
   background: #f9f9f9;
-  padding: 12px;
-  margin: 10px 0;
+  padding: 10px;
+  margin: 8px 0;
   border-left: 4px solid #ff4500;
   border-radius: 8px;
 }
 
 .tramo-resumen strong {
   color: #333;
-  font-size: 15px;
+  font-size: 14px;
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .tramo-detalle {
   display: flex;
-  gap: 15px;
-  font-size: 13px;
+  gap: 12px;
+  font-size: 12px;
   color: #666;
   flex-wrap: wrap;
   margin-top: 5px;
@@ -218,44 +342,46 @@ button:active { transform: translateY(0); }
 
 .tramo-detalle span {
   background: #f0f0f0;
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: 20px;
   font-weight: 500;
 }
 
 .resumen-total {
   background: #e8f4fd;
-  padding: 12px;
+  padding: 10px;
   border-radius: 8px;
-  margin: 15px 0;
+  margin: 12px 0;
   text-align: center;
   font-weight: bold;
+  font-size: 14px;
 }
 
 .codigo-cotizacion {
   background: #333;
   color: white;
-  padding: 8px;
+  padding: 6px;
   border-radius: 6px;
   text-align: center;
-  margin: 10px 0;
+  margin: 8px 0;
   font-family: monospace;
-  font-size: 18px;
+  font-size: 16px;
   letter-spacing: 1px;
 }
 
 /* RESPONSIVE */
 @media screen and (max-width: 600px) {
-  .container { padding: 30px 20px; }
+  .container { padding: 20px 15px; }
+  h2 { font-size: 22px; margin-bottom: 10px; }
   .destino-adicional { flex-direction: column; }
   .btn-eliminar { width: 100%; }
   .precios-section {
-    background-size: 140px auto;
+    background-size: 120px auto;
+    min-height: 180px;
   }
   .precios-content {
     width: 85%;
-    padding: 15px;
-    background: rgba(255, 255, 255, 0.7);
+    padding: 12px;
   }
 }
 </style>
@@ -263,7 +389,40 @@ button:active { transform: translateY(0); }
 <body>
 
 <div class="container">
-  <h2>🚀 Cotizador TuMotoExpress.cl</h2>
+  <h2>🚀 TuMotoExpress.cl</h2>
+
+  <!-- NUEVO CUADRO DE CONDICIONES DE SERVICIO COMPACTO Y CENTRADO -->
+  <div class="condiciones-servicio">
+    <div class="condiciones-header">
+      <span>📋</span>
+      <h3>Condiciones de servicio</h3>
+    </div>
+    
+    <!-- NUEVOS TEXTOS ENCIMA DE CADA ÍTEM (con mayúscula inicial) -->
+    <div class="condiciones-labels">
+      <span class="label-item">Medida máxima</span>
+      <span class="label-item">Peso máximo</span>
+      <span class="label-item">Tiempo de espera</span>
+    </div>
+    
+    <div class="condiciones-grid">
+      <!-- Medida máxima -->
+      <div class="condicion-item">
+        <span class="condicion-icon">📏</span>
+        <span class="condicion-texto"><strong>30x30x30</strong><span class="condicion-mini">cm</span></span>
+      </div>
+      <!-- Peso máximo -->
+      <div class="condicion-item">
+        <span class="condicion-icon">⚖️</span>
+        <span class="condicion-texto"><strong>3</strong><span class="condicion-mini">kilos</span></span>
+      </div>
+      <!-- Minuto adicional -->
+      <div class="condicion-item">
+        <span class="condicion-icon">⏱️</span>
+        <span class="condicion-texto"><strong>$200</strong><span class="condicion-mini">/min</span></span>
+      </div>
+    </div>
+  </div>
 
   <!-- Dirección de origen -->
   <input type="text" id="inicio" placeholder="Dirección de origen">
@@ -476,7 +635,7 @@ async function cotizar() {
       </div>
     `;
     
-    // SECCIÓN DE PRECIOS CON LOGO MUCHO MÁS FUERTE
+    // SECCIÓN DE PRECIOS CON LOGO
     html += `
       <div class="precios-section">
         <div class="precios-content">
