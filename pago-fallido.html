@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago Fallido - TuMotoExpress.cl</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fail-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-5px); }
+        }
+
+        h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .fail-badge {
+            background: #dc3545;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            display: inline-block;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .error-details {
+            background: #fff5f5;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 5px solid #dc3545;
+            text-align: left;
+        }
+
+        .error-title {
+            color: #dc3545;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .error-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .error-list li {
+            margin: 10px 0;
+            color: #666;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .error-list li i {
+            font-size: 18px;
+        }
+
+        .help-box {
+            background: #e7f3ff;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .help-box p {
+            margin: 5px 0;
+            color: #0056b3;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .primary-button {
+            background: #ff4500;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 2;
+            transition: all 0.3s ease;
+        }
+
+        .primary-button:hover {
+            background: #ff5722;
+            transform: translateY(-2px);
+        }
+
+        .secondary-button {
+            background: #4a4a4a;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 1;
+            transition: all 0.3s ease;
+        }
+
+        .secondary-button:hover {
+            background: #666;
+        }
+
+        .whatsapp-button {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .whatsapp-button:hover {
+            background: #128C7E;
+        }
+
+        .footer {
+            margin-top: 20px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        @media (max-width: 480px) {
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="fail-icon">❌</div>
+        <span class="fail-badge">PAGO FALLIDO</span>
+        <h1>Error en la transacción</h1>
+        
+        <div class="message">
+            Lo sentimos, no pudimos procesar tu pago. Esto puede deberse a:
+        </div>
+
+        <div class="error-details">
+            <div class="error-title">Posibles causas:</div>
+            <ul class="error-list">
+                <li><i>💳</i> Fondos insuficientes en la tarjeta</li>
+                <li><i>🔒</i> Datos de tarjeta incorrectos</li>
+                <li><i>⏱️</i> Tiempo de espera agotado</li>
+                <li><i>🌐</i> Problemas de conexión</li>
+            </ul>
+        </div>
+
+        <div class="help-box">
+            <p><strong>💡 ¿Qué puedes hacer?</strong></p>
+            <p>• Verifica los datos de tu tarjeta</p>
+            <p>• Intenta con otro medio de pago</p>
+            <p>• Contacta a tu banco si el problema persiste</p>
+        </div>
+
+        <div class="button-group">
+            <button class="primary-button" onclick="window.location.href='/'">🔄 Reintentar pago</button>
+            <button class="secondary-button" onclick="window.location.href='/'">← Volver</button>
+        </div>
+
+        <button class="whatsapp-button" id="btnWhatsapp">
+            <span>📱</span> Contactar soporte
+        </button>
+
+        <div class="footer">
+            TuMotoExpress.cl - Envíos rápidos y seguros
+        </div>
+    </div>
+
+    <script>
+        // Botón de WhatsApp para soporte
+        document.getElementById('btnWhatsapp').onclick = () => {
+            const mensaje = encodeURIComponent(`Hola! Tuve un problema al pagar en el cotizador. Necesito ayuda.`);
+            window.open(`https://wa.me/56942325524?text=${mensaje}`, '_blank');
+        };
+    </script>
+</body>
+</html>

@@ -6,6 +6,19 @@ const fs = require("fs");
 const fetch = require("node-fetch");
 const { Resend } = require("resend");
 
+// ===== WEBPAY TRANSBANK =====
+const { WebpayPlus, Options, Environment } = require('transbank-sdk');
+
+// Configuración de Webpay (usar variables de entorno)
+const webpayOptions = new Options(
+  process.env.WEBPAY_CODIGO_COMERCIO || '597055555532',  // Código de comercio (pruebas por defecto)
+  process.env.WEBPAY_API_KEY || '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C',  // Api Key de pruebas
+  Environment.Integration  // Cambiar a Environment.Production cuando estés en vivo
+);
+
+const webpay = new WebpayPlus.Transaction(webpayOptions);
+// =============================
+
 // Verificar API key al inicio
 if (!process.env.RESEND_API_KEY) {
   console.error("❌ ERROR: RESEND_API_KEY no está configurada en .env");
@@ -46,6 +59,28 @@ function leerTarifas() {
 
 let { tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones } = leerTarifas();
 let porcentajeAjuste = 0;
+
+// ============================================
+// ALMACENAMIENTO TEMPORAL DE COTIZACIONES (MEMORIA RAM)
+// ============================================
+const cotizacionesTemp = {};
+
+// Limpieza automática cada 5 minutos
+setInterval(() => {
+  const ahora = Date.now();
+  let eliminadas = 0;
+  
+  for (const [codigo, data] of Object.entries(cotizacionesTemp)) {
+    if (ahora - data.timestamp > 30 * 60 * 1000) { // 30 minutos
+      delete cotizacionesTemp[codigo];
+      eliminadas++;
+    }
+  }
+  
+  if (eliminadas > 0) {
+    console.log(`🧹 Limpieza: ${eliminadas} cotizaciones expiradas`);
+  }
+}, 5 * 60 * 1000);
 
 // FUNCIÓN PARA CALCULAR DISTANCIA Y TIEMPO (siempre la ruta más corta)
 async function calcularDistanciaYTiempo(origen, destino) {
@@ -361,7 +396,9 @@ async function enviarCorreos(cliente, cotizacion) {
   }
 }
 
-// ENDPOINT COTIZAR - MODIFICADO PARA TRAMOS SECUENCIALES
+// ============================================
+// ENDPOINT COTIZAR - MODIFICADO PARA INCLUIR CÓDIGO
+// ============================================
 app.post("/cotizar", async (req, res) => {
   console.log("📩 POST /cotizar recibido");
   console.log("📩 Body:", req.body);
@@ -382,11 +419,15 @@ app.post("/cotizar", async (req, res) => {
     // CALCULAR TRAMOS SECUENCIALES
     const { tramos, distancia_total_km, tiempo_total_minutos } = await calcularTramosSecuenciales(inicio, destinos);
     
-    // CALCULAR PRECIO TOTAL (suma de todos los tramos)
+    // CALCULAR PRECIO TOTAL
     const precios = calcularPrecioTotal(tramos, cupon || "");
+    
+    // Generar código de cotización
+    const codigoCotizacion = generarCodigoCotizacion();
     
     // Preparar respuesta
     const respuesta = {
+      codigoCotizacion,
       origen: inicio,
       tramos: tramos,
       distancia_total_km,
@@ -394,7 +435,14 @@ app.post("/cotizar", async (req, res) => {
       ...precios
     };
 
+    // GUARDAR EN MEMORIA TEMPORAL (para seguridad al pagar)
+    cotizacionesTemp[codigoCotizacion] = {
+      monto: precios.total,
+      timestamp: Date.now()
+    };
+
     console.log("✅ Cotización calculada:");
+    console.log(`🔑 Código: ${codigoCotizacion}`);
     console.log(`📍 Origen: ${inicio}`);
     tramos.forEach(t => {
       console.log(`   Tramo ${t.numero} (Destino ${t.numero}): ${t.desde} → ${t.direccion} = $${t.precio} (${t.distancia_km.toFixed(2)} km)`);
@@ -417,6 +465,106 @@ app.post("/cotizar", async (req, res) => {
   } catch (error) {
     console.error("❌ Error en /cotizar:", error);
     res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// ============================================
+// ENDPOINT PARA INICIAR PAGO WEBPAY
+// ============================================
+app.post("/iniciar-pago-webpay", async (req, res) => {
+  try {
+    const { buyOrder, amount, sessionId } = req.body;
+    
+    console.log("💳 Iniciando pago WebPay:", { buyOrder, amount, sessionId });
+    
+    // 🔒 SEGURIDAD: Verificar que la cotización existe y usar el monto REAL
+    const cotizacionGuardada = cotizacionesTemp[buyOrder];
+    
+    if (!cotizacionGuardada) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Cotización no válida o expirada" 
+      });
+    }
+    
+    // USAR EL MONTO REAL GUARDADO, NO EL QUE ENVÍA EL CLIENTE
+    const montoReal = cotizacionGuardada.monto;
+    
+    console.log(`🔒 Seguridad: Cliente envió $${amount}, pero real es $${montoReal}`);
+    
+    // Determinar la URL base
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://tudominio.com'  // CAMBIA ESTO POR TU DOMINIO REAL
+      : `http://localhost:${PORT}`;
+    
+    const returnUrl = `${baseUrl}/confirmar-pago-webpay`;
+    
+    // Crear la transacción en Transbank con el monto REAL
+    const response = await webpay.create(
+      buyOrder,      // Código de cotización
+      sessionId,     // ID de sesión
+      montoReal,     // Usamos el monto guardado, no el del cliente
+      returnUrl      // URL de retorno
+    );
+    
+    console.log("✅ Transacción WebPay creada:", response);
+    
+    res.json({
+      success: true,
+      token: response.token,
+      url: response.url
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en WebPay:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// ============================================
+// ENDPOINT PARA CONFIRMAR PAGO WEBPAY
+// ============================================
+app.get('/confirmar-pago-webpay', async (req, res) => {
+  try {
+    const { token_ws, TBK_TOKEN } = req.query;
+    
+    console.log("📩 Confirmación de pago WebPay recibida:", { token_ws, TBK_TOKEN });
+    
+    // Si el usuario canceló o hubo error
+    if (TBK_TOKEN) {
+      return res.redirect('/pago-cancelado.html');
+    }
+    
+    if (!token_ws) {
+      return res.status(400).send('No se recibió token de pago');
+    }
+    
+    // Confirmar la transacción con Transbank
+    const response = await webpay.commit(token_ws);
+    
+    console.log('📊 Respuesta de confirmación WebPay:', response);
+    
+    if (response.status === 'AUTHORIZED') {
+      // PAGO EXITOSO
+      console.log(`✅ Pago exitoso para orden: ${response.buy_order}, monto: $${response.amount}`);
+      
+      // Opcional: Eliminar la cotización temporal (ya se pagó)
+      delete cotizacionesTemp[response.buy_order];
+      
+      // Redirigir a página de éxito
+      res.redirect(`/pago-exitoso.html?orden=${response.buy_order}`);
+    } else {
+      // Pago fallido
+      console.log(`❌ Pago fallido: ${response.status}`);
+      res.redirect('/pago-fallido.html');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error confirmando pago:', error);
+    res.status(500).send('Error procesando el pago');
   }
 });
 
@@ -449,5 +597,6 @@ app.listen(PORT, () => {
   console.log(`✅ Servidor corriendo en puerto ${PORT}`);
   console.log(`📍 Google Maps Key: ${process.env.GOOGLE_MAPS_BACKEND_KEY ? "✅" : "❌"}`);
   console.log(`📧 Resend API Key: ${process.env.RESEND_API_KEY ? "✅" : "❌"}`);
+  console.log(`💳 WebPay: ${process.env.WEBPAY_CODIGO_COMERCIO ? "✅ Usando tus datos" : "⚠️ Usando pruebas"}`);
   console.log("=".repeat(50));
 });
