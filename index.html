@@ -384,9 +384,136 @@ button:active { transform: translateY(0); }
     padding: 12px;
   }
 }
+
+/* ===== ESTILOS PARA MODAL DE WEBPAY ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9998;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-contenido {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  z-index: 9999;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  animation: slideUp 0.3s ease;
+}
+
+.modal-icono {
+  font-size: 60px;
+  margin-bottom: 15px;
+}
+
+.modal-titulo {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.modal-mensaje {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.5;
+  font-size: 15px;
+}
+
+.modal-botones {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.modal-btn-whatsapp {
+  background: #25D366;
+  color: white;
+  padding: 12px 25px;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: all 0.3s;
+  flex: 1;
+  min-width: 140px;
+}
+
+.modal-btn-whatsapp:hover {
+  background: #128C7E;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(37,211,102,0.2);
+}
+
+.modal-btn-cerrar {
+  background: #f0f0f0;
+  color: #333;
+  padding: 12px 25px;
+  border-radius: 50px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  flex: 1;
+  min-width: 100px;
+}
+
+.modal-btn-cerrar:hover {
+  background: #e0e0e0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -30%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.btn-pagar {
+  cursor: pointer;
+}
 </style>
 </head>
 <body>
+
+<!-- MODAL WEBPAY (OCULTO INICIALMENTE) -->
+<div id="webpayModal" class="modal-contenido">
+  <div class="modal-icono">🔧</div>
+  <div class="modal-titulo">WebPay próximamente</div>
+  <div class="modal-mensaje">
+    El sistema de pagos con tarjeta estará disponible pronto. 
+    Mientras tanto, puedes contactarnos por WhatsApp o correo electrónico.
+  </div>
+  <div class="modal-botones">
+    <a href="https://wa.me/56942325524" target="_blank" class="modal-btn-whatsapp">📱 WhatsApp</a>
+    <button onclick="cerrarModalWebPay()" class="modal-btn-cerrar">✖ Cerrar</button>
+  </div>
+</div>
+
+<div id="modalOverlay" class="modal-overlay"></div>
 
 <div class="container">
   <h2>🚀 TuMotoExpress.cl</h2>
@@ -462,6 +589,18 @@ button:active { transform: translateY(0); }
 
 <script>
 let contadorDestinos = 1;
+
+// Función para mostrar modal de WebPay
+function mostrarModalWebPay() {
+  document.getElementById('modalOverlay').style.display = 'block';
+  document.getElementById('webpayModal').style.display = 'block';
+}
+
+// Función para cerrar modal
+function cerrarModalWebPay() {
+  document.getElementById('modalOverlay').style.display = 'none';
+  document.getElementById('webpayModal').style.display = 'none';
+}
 
 function initAutocomplete() {
   const options = { 
@@ -749,11 +888,11 @@ async function cotizar() {
     };
 
     // ============================================
-    // NUEVA FUNCIÓN PARA PAGAR CON WEBPAY
+    // BOTÓN PAGAR CON WEBPAY - SOLO MUESTRA MODAL
     // ============================================
     const btnPagar = document.getElementById("btnPagar");
     btnPagar.style.display = "block";
-    btnPagar.onclick = async () => {
+    btnPagar.onclick = function() {
       // Verificar que hay una cotización
       if (!window.ultimaCotizacion || !window.ultimaCotizacion.codigoCotizacion) {
         alert("❌ Primero debes realizar una cotización");
@@ -766,7 +905,7 @@ async function cotizar() {
       const telefono = document.getElementById("telefonoCliente").value;
       
       if (!nombre || !correo || !telefono) {
-        alert("❌ Completa todos los datos del cliente antes de pagar");
+        alert("❌ Completa todos los datos del cliente");
         return;
       }
       
@@ -784,40 +923,8 @@ async function cotizar() {
         return;
       }
       
-      // Mostrar indicador de carga
-      btnPagar.disabled = true;
-      const textoOriginal = btnPagar.textContent;
-      btnPagar.textContent = "⏳ Procesando pago...";
-      
-      try {
-        // Llamar al backend para iniciar el pago
-        const response = await fetch('/iniciar-pago-webpay', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            buyOrder: window.ultimaCotizacion.codigoCotizacion,
-            amount: window.ultimaCotizacion.total,
-            sessionId: Date.now().toString() // ID único de sesión
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          // Redirigir al cliente a la página de pago de Webpay
-          window.location.href = `${data.url}?token_ws=${data.token}`;
-        } else {
-          alert("❌ Error al iniciar el pago: " + (data.error || "Desconocido"));
-          btnPagar.disabled = false;
-          btnPagar.textContent = textoOriginal;
-        }
-        
-      } catch (err) {
-        console.error('Error:', err);
-        alert("❌ Error de conexión al intentar pagar");
-        btnPagar.disabled = false;
-        btnPagar.textContent = textoOriginal;
-      }
+      // MOSTRAR MODAL EN LUGAR DE REDIRIGIR
+      mostrarModalWebPay();
     };
 
   } catch (err) { 
@@ -826,6 +933,9 @@ async function cotizar() {
     alert("❌ Error al cotizar: " + err.message); 
   }
 }
+
+// Cerrar modal si se hace clic en el overlay
+document.getElementById('modalOverlay').addEventListener('click', cerrarModalWebPay);
 
 window.onload = initAutocomplete;
 </script>
