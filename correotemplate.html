@@ -121,7 +121,7 @@
                                 </tr>
                             </table>
                             
-                            <!-- TARJETA DE PRECIOS - LOGO CENTRADO SIN AFECTAR DISTANCIA -->
+                            <!-- TARJETA DE PRECIOS - CON LOGO SUPERPUESTO COMO SELLO -->
                             <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#f9f9f9" style="background-color:#f9f9f9; border-radius:14px; border:1px solid #e0e0e0; margin:16px 0;">
                                 <tr>
                                     <td style="padding:16px;">
@@ -136,18 +136,18 @@
                                         </table>
                                         
                                         <!-- CONTENEDOR CON POSICIÓN RELATIVA PARA SUPERPOSICIÓN -->
-                                        <div style="position:relative; width:100%;">
+                                        <div style="position:relative; width:100%; margin:10px 0;">
                                             
-                                            <!-- LOGO CENTRADO (SUPERPUESTO) -->
-                                            <div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:1;">
+                                            <!-- LOGO SUPERPUESTO (CENTRADO COMO SELLO) -->
+                                            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:100%; text-align:center; pointer-events:none; z-index:1;">
                                                 <img src="https://res.cloudinary.com/dkg3vbuel/image/upload/v1772490686/logo_eurxwy.png" 
-                                                     width="130" 
+                                                     width="140" 
                                                      height="auto" 
-                                                     alt="" 
-                                                     style="opacity:0.6; border:0; max-width:80%; height:auto;">
+                                                     alt="TuMotoExpress" 
+                                                     style="opacity:0.4; border:0; max-width:80%; height:auto;">
                                             </div>
                                             
-                                            <!-- CONTENIDO NORMAL (NETO E IVA JUNTOS) -->
+                                            <!-- CONTENIDO NORMAL (TEXTO Y MONTOS) -->
                                             <div style="position:relative; z-index:2;">
                                                 
                                                 <!-- NETO -->
@@ -179,7 +179,7 @@
                                             </div>
                                         </div>
                                         
-                                        <!-- TOTAL (fuera del contenedor superpuesto) -->
+                                        <!-- TOTAL -->
                                         <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background-color:#000000; border-radius:14px; margin:20px 0 12px;">
                                             <tr>
                                                 <td style="padding:16px 12px; text-align:center;">
