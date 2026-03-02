@@ -385,7 +385,7 @@ button:active { transform: translateY(0); }
   }
 }
 
-/* ===== ESTILOS PARA MODAL DE WEBPAY ===== */
+/* ===== ESTILOS PARA MODAL DE WEBPAY (SOLO BOTÓN CERRAR) ===== */
 .modal-overlay {
   display: none;
   position: fixed;
@@ -409,7 +409,7 @@ button:active { transform: translateY(0); }
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
   z-index: 9999;
-  max-width: 400px;
+  max-width: 350px;
   width: 90%;
   text-align: center;
   animation: slideUp 0.3s ease;
@@ -429,51 +429,30 @@ button:active { transform: translateY(0); }
 
 .modal-mensaje {
   color: #666;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
   line-height: 1.5;
   font-size: 15px;
 }
 
-.modal-botones {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.modal-btn-whatsapp {
-  background: #25D366;
-  color: white;
-  padding: 12px 25px;
-  border-radius: 50px;
-  text-decoration: none;
-  font-weight: bold;
-  transition: all 0.3s;
-  flex: 1;
-  min-width: 140px;
-}
-
-.modal-btn-whatsapp:hover {
-  background: #128C7E;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(37,211,102,0.2);
-}
-
 .modal-btn-cerrar {
-  background: #f0f0f0;
-  color: #333;
+  background: #ff4500;
+  color: white;
   padding: 12px 25px;
   border-radius: 50px;
   border: none;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
-  flex: 1;
-  min-width: 100px;
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto;
+  display: block;
 }
 
 .modal-btn-cerrar:hover {
-  background: #e0e0e0;
+  background: #ff5722;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(255,69,0,0.2);
 }
 
 @keyframes fadeIn {
@@ -499,18 +478,14 @@ button:active { transform: translateY(0); }
 </head>
 <body>
 
-<!-- MODAL WEBPAY (OCULTO INICIALMENTE) -->
+<!-- MODAL WEBPAY (OCULTO INICIALMENTE) - SOLO BOTÓN CERRAR -->
 <div id="webpayModal" class="modal-contenido">
   <div class="modal-icono">🔧</div>
   <div class="modal-titulo">WebPay próximamente</div>
   <div class="modal-mensaje">
-    El sistema de pagos con tarjeta estará disponible pronto. 
-    Mientras tanto, puedes contactarnos por WhatsApp o correo electrónico.
+    El sistema de pagos con tarjeta estará disponible pronto.
   </div>
-  <div class="modal-botones">
-    <a href="https://wa.me/56942325524" target="_blank" class="modal-btn-whatsapp">📱 WhatsApp</a>
-    <button onclick="cerrarModalWebPay()" class="modal-btn-cerrar">✖ Cerrar</button>
-  </div>
+  <button onclick="cerrarModalWebPay()" class="modal-btn-cerrar">✖ Cerrar</button>
 </div>
 
 <div id="modalOverlay" class="modal-overlay"></div>
@@ -888,7 +863,7 @@ async function cotizar() {
     };
 
     // ============================================
-    // BOTÓN PAGAR CON WEBPAY - SOLO MUESTRA MODAL
+    // BOTÓN PAGAR CON WEBPAY - SOLO MUESTRA MODAL (SIN WHATSAPP)
     // ============================================
     const btnPagar = document.getElementById("btnPagar");
     btnPagar.style.display = "block";

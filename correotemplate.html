@@ -121,51 +121,61 @@
                                 </tr>
                             </table>
                             
-                            <!-- TARJETA DE PRECIOS -->
-                            <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#f9f9f9" style="background-color:#f9f9f9; border-radius:14px; border:1px solid #e0e0e0; margin:16px 0;">
+                            <!-- TARJETA DE PRECIOS (CON LOGO COMO MARCA DE AGUA - IGUAL AL INDEX) -->
+                            <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:16px 0; position:relative;">
                                 <tr>
-                                    <td style="padding:16px;">
-                                        
-                                        <!-- Título -->
-                                        <table width="100%" border="0" cellpadding="0" cellspacing="0">
-                                            <tr>
-                                                <td style="border-bottom:2px solid #ff4500; padding-bottom:10px; margin-bottom:12px;">
-                                                    <span style="font-size:18px; font-weight:bold; color:#000000;">💰 Detalle de tu cotización</span>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <!-- Tabla de precios -->
-                                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:12px 0;">
-                                            <tr>
-                                                <td style="padding:10px 3px; border-bottom:1px dashed #dddddd;">Neto:</td>
-                                                <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{neto}}</td>
-                                            </tr>
+                                    <td style="padding:0;">
+                                        <!-- Contenedor con fondo de logo (exactamente como en index.html) -->
+                                        <div style="position: relative; width: 100%;">
                                             
-                                            <!-- DESCUENTO CONDICIONAL -->
-                                            {{#if descuento}}
-                                            <tr>
-                                                <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; color:#27ae60;">🎟️ Descuento aplicado:</td>
-                                                <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600; color:#27ae60;">-${{descuento}}</td>
-                                            </tr>
-                                            {{/if}}
+                                            <!-- Fondo con logo centrado -->
+                                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://tumotoexpress.cl/logo.png'); background-repeat: no-repeat; background-position: center; background-size: 150px auto; opacity: 0.7; pointer-events: none; z-index: 0;"></div>
                                             
-                                            <tr>
-                                                <td style="padding:10px 3px; border-bottom:1px dashed #dddddd;">IVA (19%):</td>
-                                                <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{iva}}</td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <!-- TOTAL -->
-                                        <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background-color:#000000; border-radius:14px; margin:20px 0 12px;">
-                                            <tr>
-                                                <td style="padding:16px 12px; text-align:center;">
-                                                    <div style="font-size:14px; color:#ffffff; opacity:0.9; margin-bottom:5px;">TOTAL DEL SERVICIO</div>
-                                                    <div style="font-size:38px; font-weight:bold; color:#ff4500; line-height:1.2;">${{total}}</div>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
+                                            <!-- Contenido con fondo semitransparente -->
+                                            <div style="position: relative; z-index: 1; background: rgba(255, 255, 255, 0.7); border-radius: 14px; border: 1px solid #e0e0e0; padding: 16px;">
+                                                
+                                                <!-- Título -->
+                                                <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                                    <tr>
+                                                        <td style="border-bottom:2px solid #ff4500; padding-bottom:10px; margin-bottom:12px;">
+                                                            <span style="font-size:18px; font-weight:bold; color:#000000;">💰 Detalle de tu cotización</span>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                                
+                                                <!-- Tabla de precios -->
+                                                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:12px 0;">
+                                                    <tr>
+                                                        <td style="padding:10px 3px; border-bottom:1px dashed #dddddd;">Neto:</td>
+                                                        <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{neto}}</td>
+                                                    </tr>
+                                                    
+                                                    <!-- DESCUENTO CONDICIONAL -->
+                                                    {{#if descuento}}
+                                                    <tr>
+                                                        <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; color:#27ae60;">🎟️ Descuento aplicado:</td>
+                                                        <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600; color:#27ae60;">-${{descuento}}</td>
+                                                    </tr>
+                                                    {{/if}}
+                                                    
+                                                    <tr>
+                                                        <td style="padding:10px 3px; border-bottom:1px dashed #dddddd;">IVA (19%):</td>
+                                                        <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{iva}}</td>
+                                                    </tr>
+                                                </table>
+                                                
+                                                <!-- TOTAL -->
+                                                <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background-color:#000000; border-radius:14px; margin:20px 0 12px;">
+                                                    <tr>
+                                                        <td style="padding:16px 12px; text-align:center;">
+                                                            <div style="font-size:14px; color:#ffffff; opacity:0.9; margin-bottom:5px;">TOTAL DEL SERVICIO</div>
+                                                            <div style="font-size:38px; font-weight:bold; color:#ff4500; line-height:1.2;">${{total}}</div>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                                
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             </table>
