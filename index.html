@@ -585,14 +585,7 @@ async function cotizar() {
     const response = await fetch("/cotizar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        inicio, 
-        destinos, 
-        cupon: codigo_cupon,
-        nombre: document.getElementById("nombreCliente").value,
-        correo: document.getElementById("correoCliente").value,
-        telefono: document.getElementById("telefonoCliente").value
-      })
+      body: JSON.stringify({ inicio, destinos, cupon: codigo_cupon })
     });
     
     const data = await response.json();
@@ -748,77 +741,9 @@ async function cotizar() {
       }
     };
 
-    // ============================================
-    // NUEVA FUNCIÓN PARA PAGAR CON WEBPAY
-    // ============================================
     const btnPagar = document.getElementById("btnPagar");
     btnPagar.style.display = "block";
-    btnPagar.onclick = async () => {
-      // Verificar que hay una cotización
-      if (!window.ultimaCotizacion || !window.ultimaCotizacion.codigoCotizacion) {
-        alert("❌ Primero debes realizar una cotización");
-        return;
-      }
-      
-      // Verificar que los datos del cliente están completos
-      const nombre = document.getElementById("nombreCliente").value;
-      const correo = document.getElementById("correoCliente").value;
-      const telefono = document.getElementById("telefonoCliente").value;
-      
-      if (!nombre || !correo || !telefono) {
-        alert("❌ Completa todos los datos del cliente antes de pagar");
-        return;
-      }
-      
-      // Validar email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(correo)) {
-        alert("❌ Ingresa un correo válido");
-        return;
-      }
-      
-      // Validar teléfono
-      const telefonoRegex = /^[0-9]{9}$/;
-      if (!telefonoRegex.test(telefono)) {
-        alert("❌ Ingresa un teléfono válido de 9 dígitos");
-        return;
-      }
-      
-      // Mostrar indicador de carga
-      btnPagar.disabled = true;
-      const textoOriginal = btnPagar.textContent;
-      btnPagar.textContent = "⏳ Procesando pago...";
-      
-      try {
-        // Llamar al backend para iniciar el pago
-        const response = await fetch('/iniciar-pago-webpay', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            buyOrder: window.ultimaCotizacion.codigoCotizacion,
-            amount: window.ultimaCotizacion.total,
-            sessionId: Date.now().toString() // ID único de sesión
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          // Redirigir al cliente a la página de pago de Webpay
-          window.location.href = `${data.url}?token_ws=${data.token}`;
-        } else {
-          alert("❌ Error al iniciar el pago: " + (data.error || "Desconocido"));
-          btnPagar.disabled = false;
-          btnPagar.textContent = textoOriginal;
-        }
-        
-      } catch (err) {
-        console.error('Error:', err);
-        alert("❌ Error de conexión al intentar pagar");
-        btnPagar.disabled = false;
-        btnPagar.textContent = textoOriginal;
-      }
-    };
+    btnPagar.onclick = () => alert("⏳ Integración WebPay próximamente");
 
   } catch (err) { 
     spinner.style.display = "none"; 
