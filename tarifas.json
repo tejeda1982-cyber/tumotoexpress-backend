@@ -3,7 +3,7 @@
   "km_adicional_6_10": 1000,
   "km_adicional_10_mas": 850,
   "cupones": {
-    "MAMA": 0.20,
-    "PAPA": 0.30
+    "BIENVENIDA10": 10,
+    "DESCUENTO20": 20
   }
 }
