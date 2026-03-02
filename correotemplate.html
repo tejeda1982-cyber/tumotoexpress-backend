@@ -24,6 +24,59 @@
         td, th {
             padding: 0;
         }
+        
+        /* ESTILO PARA SECCIÓN DE PRECIOS CON LOGO SUPERPUESTO (IGUAL AL INDEX) */
+        .precios-section {
+            position: relative;
+            padding: 0;
+            background: #ffffff;
+            border-radius: 12px;
+            margin: 15px 0;
+            border: 1px solid #e0e0e0;
+            overflow: hidden;
+            min-height: 200px;
+            background-image: url('https://tumotoexpress.cl/logo.png');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 150px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        
+        .precios-content {
+            background: rgba(255, 255, 255, 0.7);
+            width: 90%;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px auto;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .precio-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px dashed #ddd;
+            font-size: 14px;
+        }
+        
+        .precio-item:last-child {
+            border-bottom: none;
+        }
+        
+        .precio-total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff4500;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 2px solid #ff4500;
+        }
     </style>
 </head>
 <body style="margin:0; padding:0; background-color:#f4f4f4; font-family: 'Segoe UI', Arial, Helvetica, sans-serif;">
@@ -121,64 +174,36 @@
                                 </tr>
                             </table>
                             
-                            <!-- TARJETA DE PRECIOS (CON LOGO COMO MARCA DE AGUA - IGUAL AL INDEX) -->
-                            <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:16px 0; position:relative;">
-                                <tr>
-                                    <td style="padding:0;">
-                                        <!-- Contenedor con fondo de logo (exactamente como en index.html) -->
-                                        <div style="position: relative; width: 100%;">
-                                            
-                                            <!-- Fondo con logo centrado -->
-                                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://tumotoexpress.cl/logo.png'); background-repeat: no-repeat; background-position: center; background-size: 150px auto; opacity: 0.7; pointer-events: none; z-index: 0;"></div>
-                                            
-                                            <!-- Contenido con fondo semitransparente -->
-                                            <div style="position: relative; z-index: 1; background: rgba(255, 255, 255, 0.7); border-radius: 14px; border: 1px solid #e0e0e0; padding: 16px;">
-                                                
-                                                <!-- Título -->
-                                                <table width="100%" border="0" cellpadding="0" cellspacing="0">
-                                                    <tr>
-                                                        <td style="border-bottom:2px solid #ff4500; padding-bottom:10px; margin-bottom:12px;">
-                                                            <span style="font-size:18px; font-weight:bold; color:#000000;">💰 Detalle de tu cotización</span>
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                                
-                                                <!-- Tabla de precios -->
-                                                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:12px 0;">
-                                                    <tr>
-                                                        <td style="padding:10px 3px; border-bottom:1px dashed #dddddd;">Neto:</td>
-                                                        <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{neto}}</td>
-                                                    </tr>
-                                                    
-                                                    <!-- DESCUENTO CONDICIONAL -->
-                                                    {{#if descuento}}
-                                                    <tr>
-                                                        <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; color:#27ae60;">🎟️ Descuento aplicado:</td>
-                                                        <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600; color:#27ae60;">-${{descuento}}</td>
-                                                    </tr>
-                                                    {{/if}}
-                                                    
-                                                    <tr>
-                                                        <td style="padding:10px 3px; border-bottom:1px dashed #dddddd;">IVA (19%):</td>
-                                                        <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{iva}}</td>
-                                                    </tr>
-                                                </table>
-                                                
-                                                <!-- TOTAL -->
-                                                <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background-color:#000000; border-radius:14px; margin:20px 0 12px;">
-                                                    <tr>
-                                                        <td style="padding:16px 12px; text-align:center;">
-                                                            <div style="font-size:14px; color:#ffffff; opacity:0.9; margin-bottom:5px;">TOTAL DEL SERVICIO</div>
-                                                            <div style="font-size:38px; font-weight:bold; color:#ff4500; line-height:1.2;">${{total}}</div>
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                                
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </table>
+                            <!-- SECCIÓN DE PRECIOS CON LOGO SUPERPUESTO (EXACTAMENTE IGUAL AL INDEX) -->
+                            <div class="precios-section">
+                                <div class="precios-content">
+                                    <strong style="display:block; text-align:center; margin-bottom:10px;">💰 Detalle de precios:</strong>
+                                    <div class="precio-item">
+                                        <span>Neto:</span>
+                                        <span>${{neto}}</span>
+                                    </div>
+                                    
+                                    {{#if descuento}}
+                                    <div class="precio-item" style="color:#27ae60;">
+                                        <span>🎟️ Descuento:</span>
+                                        <span>-${{descuento}}</span>
+                                    </div>
+                                    <div class="precio-item">
+                                        <span>Neto con descuento:</span>
+                                        <span>${{netoConDescuento}}</span>
+                                    </div>
+                                    {{/if}}
+                                    
+                                    <div class="precio-item">
+                                        <span>IVA (19%):</span>
+                                        <span>${{iva}}</span>
+                                    </div>
+                                    <div class="precio-total">
+                                        <span>TOTAL:</span>
+                                        <span>${{total}}</span>
+                                    </div>
+                                </div>
+                            </div>
                             
                             <!-- HORARIO -->
                             <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#e8f4fd" style="background-color:#e8f4fd; border-radius:14px; border-left:3px solid #2196F3; margin:20px 0;">
