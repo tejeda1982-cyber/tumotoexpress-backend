@@ -6,17 +6,6 @@ const fs = require("fs");
 const fetch = require("node-fetch");
 const { Resend } = require("resend");
 
-// ============================================
-// FUNCIÓN PARA MENSAJE TEMPORAL DE WEBPAY
-// ============================================
-function responderMantenimientoWebPay(res, mensaje = "🔧 WebPay estará activo próximamente. Mientras tanto, agenda por WhatsApp o correo.") {
-  return res.status(200).json({
-    success: false,
-    temporal: true,
-    message: mensaje
-  });
-}
-
 // ===== WEBPAY TRANSBANK =====
 const { WebpayPlus, Options, Environment } = require('transbank-sdk');
 
@@ -70,75 +59,6 @@ function leerTarifas() {
 
 let { tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones } = leerTarifas();
 let porcentajeAjuste = 0;
-
-// ============================================
-// ENDPOINTS PARA MINIPANEL VISUAL
-// ============================================
-
-// GET /config - Obtener configuración actual
-app.get('/config', (req, res) => {
-  try {
-    res.json({
-      porcentajeAjuste: porcentajeAjuste || 0,
-      cupones: cupones || {}
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Error al leer configuración' });
-  }
-});
-
-// POST /config - Guardar nueva configuración
-app.post('/config', async (req, res) => {
-  try {
-    const { nuevoPorcentaje, nuevosCupones } = req.body;
-    
-    console.log("📝 Recibiendo nueva configuración desde minipanel:");
-    console.log(`   Porcentaje: ${nuevoPorcentaje}%`);
-    console.log(`   Cupones: ${Object.keys(nuevosCupones || {}).length}`);
-    
-    // Actualizar variables en memoria
-    porcentajeAjuste = nuevoPorcentaje || 0;
-    cupones = nuevosCupones || {};
-    
-    // Leer tarifas actuales
-    let tarifas = leerTarifas();
-    
-    // Aplicar porcentaje de ajuste a las tarifas base
-    const factor = 1 + (porcentajeAjuste / 100);
-    
-    // Valores base fijos (los originales)
-    const BASE_TARIFA = 6000;
-    const BASE_6_10 = 1000;
-    const BASE_10 = 850;
-    
-    tarifas.tarifa_base = Math.round(BASE_TARIFA * factor);
-    tarifas.km_adicional_6_10 = Math.round(BASE_6_10 * factor);
-    tarifas.km_adicional_10_mas = Math.round(BASE_10 * factor);
-    
-    // Actualizar cupones
-    tarifas.cupones = cupones;
-    
-    // Guardar en tarifas.json
-    fs.writeFileSync(TARIFAS_FILE, JSON.stringify(tarifas, null, 2));
-    
-    // Recargar variables globales
-    let tarifasActualizadas = leerTarifas();
-    tarifa_base = tarifasActualizadas.tarifa_base;
-    km_adicional_6_10 = tarifasActualizadas.km_adicional_6_10;
-    km_adicional_10_mas = tarifasActualizadas.km_adicional_10_mas;
-    cupones = tarifasActualizadas.cupones;
-    
-    console.log("✅ Configuración actualizada:");
-    console.log(`   Nueva tarifa base: $${tarifa_base}`);
-    console.log(`   Nuevo porcentaje: ${porcentajeAjuste}%`);
-    
-    res.json({ ok: true, message: 'Configuración guardada' });
-    
-  } catch (error) {
-    console.error('❌ Error guardando configuración:', error);
-    res.status(500).json({ error: 'Error al guardar configuración' });
-  }
-});
 
 // ============================================
 // ALMACENAMIENTO TEMPORAL DE COTIZACIONES (MEMORIA RAM)
@@ -476,7 +396,9 @@ async function enviarCorreos(cliente, cotizacion) {
   }
 }
 
+// ============================================
 // ENDPOINT COTIZAR - MODIFICADO PARA INCLUIR CÓDIGO
+// ============================================
 app.post("/cotizar", async (req, res) => {
   console.log("📩 POST /cotizar recibido");
   console.log("📩 Body:", req.body);
@@ -547,18 +469,13 @@ app.post("/cotizar", async (req, res) => {
 });
 
 // ============================================
-// ENDPOINT PARA INICIAR PAGO WEBPAY (VERSIÓN TEMPORAL CON MENSAJE)
+// ENDPOINT PARA INICIAR PAGO WEBPAY
 // ============================================
 app.post("/iniciar-pago-webpay", async (req, res) => {
   try {
     const { buyOrder, amount, sessionId } = req.body;
     
-    console.log("💳 Intento de pago WebPay (MODO TEMPORAL):", { buyOrder, amount, sessionId });
-    
-    // RESPONDER CON MENSAJE DE PRÓXIMAMENTE
-    return responderMantenimientoWebPay(res);
-    
-    /* ===== CÓDIGO REAL COMENTADO (ACTIVAR CUANDO WEBPAY ESTÉ LISTO) =====
+    console.log("💳 Iniciando pago WebPay:", { buyOrder, amount, sessionId });
     
     // 🔒 SEGURIDAD: Verificar que la cotización existe y usar el monto REAL
     const cotizacionGuardada = cotizacionesTemp[buyOrder];
@@ -577,7 +494,7 @@ app.post("/iniciar-pago-webpay", async (req, res) => {
     
     // Determinar la URL base
     const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://tumotoexpress.cl'  // CAMBIA ESTO POR TU DOMINIO REAL
+      ? 'https://tudominio.com'  // CAMBIA ESTO POR TU DOMINIO REAL
       : `http://localhost:${PORT}`;
     
     const returnUrl = `${baseUrl}/confirmar-pago-webpay`;
@@ -598,155 +515,19 @@ app.post("/iniciar-pago-webpay", async (req, res) => {
       url: response.url
     });
     
-    ===== FIN DEL CÓDIGO REAL COMENTADO ===== */
-    
   } catch (error) {
     console.error('❌ Error en WebPay:', error);
     res.status(500).json({ 
       success: false, 
-      error: "Error interno al procesar el pago"
+      error: error.message 
     });
   }
 });
 
 // ============================================
-// ENDPOINT PARA CONFIRMAR PAGO WEBPAY (VERSIÓN TEMPORAL)
+// ENDPOINT PARA CONFIRMAR PAGO WEBPAY
 // ============================================
 app.get('/confirmar-pago-webpay', async (req, res) => {
-  // Mostrar página de mantenimiento en lugar de procesar
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>WebPay - Próximamente</title>
-      <style>
-        body { 
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          margin: 0;
-          padding: 0;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-        }
-        .container {
-          background: white;
-          border-radius: 20px;
-          padding: 40px 30px;
-          max-width: 500px;
-          width: 90%;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-          text-align: center;
-          animation: slideIn 0.5s ease;
-        }
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateY(-20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .icon {
-          font-size: 80px;
-          margin-bottom: 20px;
-        }
-        h1 { 
-          color: #333; 
-          margin-bottom: 15px;
-          font-size: 28px;
-        }
-        p { 
-          color: #666; 
-          line-height: 1.6;
-          margin-bottom: 25px;
-          font-size: 16px;
-        }
-        .message-box {
-          background: #f8f9fa;
-          border-left: 5px solid #ff4500;
-          padding: 20px;
-          border-radius: 10px;
-          margin: 25px 0;
-          text-align: left;
-        }
-        .message-box p {
-          margin: 5px 0;
-          color: #555;
-        }
-        .buttons {
-          display: flex;
-          gap: 15px;
-          justify-content: center;
-          margin-top: 30px;
-          flex-wrap: wrap;
-        }
-        .btn {
-          padding: 14px 28px;
-          border-radius: 50px;
-          text-decoration: none;
-          font-weight: bold;
-          transition: all 0.3s ease;
-          display: inline-block;
-        }
-        .btn-primary {
-          background: #ff4500;
-          color: white;
-        }
-        .btn-primary:hover {
-          background: #ff5722;
-          transform: translateY(-2px);
-          box-shadow: 0 10px 20px rgba(255,69,0,0.2);
-        }
-        .btn-secondary {
-          background: #25D366;
-          color: white;
-        }
-        .btn-secondary:hover {
-          background: #128C7E;
-          transform: translateY(-2px);
-          box-shadow: 0 10px 20px rgba(37,211,102,0.2);
-        }
-        .btn-tertiary {
-          background: #f0f0f0;
-          color: #333;
-        }
-        .btn-tertiary:hover {
-          background: #e0e0e0;
-        }
-        .footer {
-          margin-top: 30px;
-          color: #999;
-          font-size: 14px;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="icon">🔧</div>
-        <h1>WebPay en mantenimiento</h1>
-        <p>El sistema de pagos con tarjeta estará activo próximamente.</p>
-        
-        <div class="message-box">
-          <p><strong>✅ ¿Ya cotizaste?</strong> Tu cotización sigue vigente.</p>
-          <p><strong>📱 ¿Quieres contratar ahora?</strong> Puedes solicitar el servicio por WhatsApp o correo.</p>
-          <p><strong>⏱️ Vuelve pronto</strong> Estamos trabajando para activar WebPay.</p>
-        </div>
-
-        <div class="buttons">
-          <a href="/" class="btn btn-primary">← Volver al cotizador</a>
-          <a href="https://wa.me/56942325524" class="btn btn-secondary" target="_blank">📱 WhatsApp</a>
-          <a href="#" onclick="history.back()" class="btn btn-tertiary">↩️ Atrás</a>
-        </div>
-        
-        <div class="footer">
-          TuMotoExpress.cl - Envíos rápidos y seguros
-        </div>
-      </div>
-    </body>
-    </html>
-  `);
-  
-  /* ===== CÓDIGO REAL COMENTADO (ACTIVAR CUANDO WEBPAY ESTÉ LISTO) =====
   try {
     const { token_ws, TBK_TOKEN } = req.query;
     
@@ -785,7 +566,6 @@ app.get('/confirmar-pago-webpay', async (req, res) => {
     console.error('❌ Error confirmando pago:', error);
     res.status(500).send('Error procesando el pago');
   }
-  ===== FIN DEL CÓDIGO REAL COMENTADO ===== */
 });
 
 // ENDPOINT PARA ENVIAR CORREO
@@ -810,4 +590,13 @@ app.post("/enviar-correo", async (req, res) => {
   }
 });
 
-//
+// SERVER
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+  console.log("=".repeat(50));
+  console.log(`✅ Servidor corriendo en puerto ${PORT}`);
+  console.log(`📍 Google Maps Key: ${process.env.GOOGLE_MAPS_BACKEND_KEY ? "✅" : "❌"}`);
+  console.log(`📧 Resend API Key: ${process.env.RESEND_API_KEY ? "✅" : "❌"}`);
+  console.log(`💳 WebPay: ${process.env.WEBPAY_CODIGO_COMERCIO ? "✅ Usando tus datos" : "⚠️ Usando pruebas"}`);
+  console.log("=".repeat(50));
+});

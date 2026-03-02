@@ -2,503 +2,82 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>MiniPanel Visual - TuMotoExpress.cl</title>
+<title>MiniPanel Visual - TuMotoExpress</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: 'Segoe UI', sans-serif;
+  background: #f5f6fa;
   display: flex;
   justify-content: center;
   align-items: flex-start;
   min-height: 100vh;
   padding: 20px;
 }
-
-.container {
-  background: white;
-  padding: 30px 25px;
-  border-radius: 20px;
-  width: 100%;
-  max-width: 550px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  margin: 20px auto;
-}
-
-h2 {
-  text-align: center;
-  margin-bottom: 25px;
-  color: #333;
-  font-size: 28px;
-  border-bottom: 3px solid #ff4500;
-  padding-bottom: 15px;
-}
-
-h3 {
-  color: #444;
-  margin: 20px 0 10px 0;
-  font-size: 18px;
-  border-left: 4px solid #ff4500;
-  padding-left: 10px;
-}
-
-label {
-  font-weight: 600;
-  display: block;
-  margin-top: 15px;
-  margin-bottom: 5px;
-  color: #555;
-}
-
-input[type="number"], input[type="text"] {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: 2px solid #e0e0e0;
-  font-size: 16px;
-  transition: all 0.3s;
-}
-
-input[type="number"]:focus, input[type="text"]:focus {
-  border-color: #ff4500;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(255,69,0,0.1);
-}
-
-.tarifas-info {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 16px;
-  padding: 20px;
-  margin: 20px 0;
-  border: 1px solid #dee2e6;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-}
-
-.tarifas-info h4 {
-  color: #ff4500;
-  margin-bottom: 15px;
-  font-size: 16px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.tarifa-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px dashed #ced4da;
-}
-
-.tarifa-row:last-child {
-  border-bottom: none;
-}
-
-.tarifa-label {
-  color: #495057;
-  font-weight: 500;
-}
-
-.tarifa-valor {
-  font-weight: 700;
-  color: #ff4500;
-  font-size: 18px;
-  background: white;
-  padding: 4px 12px;
-  border-radius: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.tarifa-base-info {
-  background: white;
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 10px;
-  border-left: 4px solid #28a745;
-}
-
-.cupon-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 12px 0;
-  background: #f8f9fa;
-  padding: 10px;
-  border-radius: 10px;
-  border-left: 4px solid #ff4500;
-  animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.cupon-item input[type="text"] {
-  flex: 2;
-  margin: 0;
-}
-
-.cupon-item input[type="number"] {
-  flex: 1;
-  margin: 0;
-}
-
-.cupon-item button {
-  width: 70px;
-  margin: 0;
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.cupon-item button:hover {
-  background-color: #c82333;
-  transform: scale(1.05);
-}
-
-.button-group {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-  flex-wrap: wrap;
-}
-
-.btn-primary {
-  background: linear-gradient(45deg, #ff4500, #ff6a33);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  padding: 14px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  flex: 2;
-  min-width: 150px;
-  transition: all 0.3s;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(255,69,0,0.3);
-}
-
-.btn-secondary {
-  background: #4a4a4a;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  padding: 14px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  flex: 1;
-  min-width: 120px;
-  transition: all 0.3s;
-}
-
-.btn-secondary:hover {
-  background: #5a5a5a;
-}
-
-.btn-success {
-  background: #28a745;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  padding: 14px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  width: 100%;
-  margin-top: 10px;
-  transition: all 0.3s;
-}
-
-.btn-success:hover {
-  background: #218838;
-}
-
-.btn-warning {
-  background: #ffc107;
-  color: #333;
-  border: none;
-  border-radius: 12px;
-  padding: 14px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  flex: 1;
-  min-width: 120px;
-  transition: all 0.3s;
-}
-
-.btn-warning:hover {
-  background: #e0a800;
-}
-
-.status-message {
-  margin-top: 15px;
-  padding: 12px;
-  border-radius: 8px;
-  text-align: center;
-  font-weight: bold;
-  display: none;
-}
-
-.status-success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.status-error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-.footer-info {
-  margin-top: 20px;
-  padding: 10px;
-  text-align: center;
-  color: #6c757d;
-  font-size: 13px;
-  border-top: 1px solid #dee2e6;
-}
-
-@media (max-width: 480px) {
-  .container { padding: 20px; }
-  .button-group { flex-direction: column; }
-  .cupon-item { flex-wrap: wrap; }
-  .cupon-item button { width: 100%; }
-  .tarifa-row { flex-direction: column; gap: 5px; }
-}
+.container { background: white; padding: 30px 25px; border-radius: 15px; width: 100%; max-width: 500px; box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
+h2 { text-align: center; margin-bottom: 20px; }
+label { font-weight: bold; display: block; margin-top: 15px; }
+input[type="number"], input[type="text"] { width: 100%; padding: 10px; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+button { margin-top: 15px; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; background-color: #111; color: white; width: 100%; font-size: 16px; }
+.cupon-item { display: flex; align-items: center; margin-top: 10px; }
+.cupon-item input { flex: 1; margin-right: 10px; }
+.cupon-item button { width: 70px; background-color: #e74c3c; }
+#agregarCuponBtn { background-color: #27ae60; }
 </style>
 </head>
 <body>
 <div class="container">
-<h2>⚙️ MiniPanel TuMotoExpress</h2>
-
-<!-- SECCIÓN: TARIFAS ACTUALES -->
-<div class="tarifas-info">
-  <h4>💰 TARIFAS VIGENTES</h4>
-  
-  <div class="tarifa-base-info">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-weight: 600;">Tarifa base (hasta 6 km):</span>
-      <span id="tarifaBase" class="tarifa-valor">-</span>
-    </div>
-  </div>
-  
-  <div class="tarifa-row">
-    <span class="tarifa-label">📊 Kilómetro adicional (6-10 km):</span>
-    <span id="km6_10" class="tarifa-valor">-</span>
-  </div>
-  
-  <div class="tarifa-row">
-    <span class="tarifa-label">🚀 Kilómetro adicional (+10 km):</span>
-    <span id="km10" class="tarifa-valor">-</span>
-  </div>
-</div>
-
-<!-- SECCIÓN: AJUSTE GLOBAL -->
-<label for="porcentajeAjuste">📈 Porcentaje de ajuste global (%)</label>
-<input type="number" id="porcentajeAjuste" min="-50" max="100" step="1" placeholder="Ej: 10 para subir 10%, -5 para bajar 5%">
-<small style="color:#666; display:block; margin-top:5px; margin-bottom:15px;">
-  ℹ️ Este porcentaje se aplica sobre las tarifas base (6.000, 1.000, 850)
-</small>
-
-<!-- SECCIÓN: CUPONES -->
-<h3>🎟️ Cupones de descuento activos</h3>
+<h2>MiniPanel Visual - TuMotoExpress</h2>
+<label for="porcentajeAjuste">Porcentaje de ajuste global (%)</label>
+<input type="number" id="porcentajeAjuste" min="0" step="1">
+<label>Cupones:</label>
 <div id="listaCupones"></div>
-
-<!-- BOTONES DE ACCIÓN -->
-<div class="button-group">
-  <button class="btn-secondary" onclick="agregarCuponVacio()">
-    ➕ Agregar cupón
-  </button>
-  <button class="btn-primary" onclick="guardarCambios()">
-    💾 Guardar cambios
-  </button>
-  <button class="btn-warning" onclick="restaurarOriginales()">
-    ↩️ 0% (original)
-  </button>
+<button id="agregarCuponBtn">Agregar cupón</button>
+<button id="guardarCambiosBtn">Guardar cambios</button>
 </div>
-
-<!-- ESTADO -->
-<div id="statusMessage" class="status-message"></div>
-
-<!-- BOTÓN RECARGAR -->
-<button class="btn-success" onclick="cargarConfig()">
-  🔄 Recargar configuración actual
-</button>
-
-<div class="footer-info">
-  <p>Los valores base son: Tarifa base $6.000 | 6-10 km: $1.000/km | +10 km: $850/km</p>
-  <p>Los valores mostrados arriba ya incluyen el porcentaje de ajuste</p>
-</div>
-
-</div>
-
 <script>
+
 const BACKEND_URL = 'https://tumotoexpress-backend.onrender.com';
 
-// Función para mostrar mensajes
-function mostrarMensaje(texto, tipo = 'success') {
-  const msg = document.getElementById('statusMessage');
-  msg.textContent = texto;
-  msg.className = `status-message status-${tipo}`;
-  msg.style.display = 'block';
-  setTimeout(() => {
-    msg.style.display = 'none';
-  }, 3000);
-}
-
-// Cargar configuración desde el backend
 async function cargarConfig() {
-  try {
-    const resp = await fetch(`${BACKEND_URL}/config`);
-    const data = await resp.json();
-    
-    // Mostrar porcentaje actual
-    document.getElementById('porcentajeAjuste').value = data.porcentajeAjuste || 0;
-    
-    // Calcular valores actuales (con el porcentaje aplicado)
-    const porcentaje = data.porcentajeAjuste || 0;
-    const factor = 1 + (porcentaje / 100);
-    
-    // Valores base
-    const baseTarifa = 6000;
-    const base6_10 = 1000;
-    const base10 = 850;
-    
-    // Valores con ajuste
-    const tarifaActual = Math.round(baseTarifa * factor);
-    const km6_10Actual = Math.round(base6_10 * factor);
-    const km10Actual = Math.round(base10 * factor);
-    
-    // Mostrar en la interfaz
-    document.getElementById('tarifaBase').textContent = `$${tarifaActual.toLocaleString('es-CL')}`;
-    document.getElementById('km6_10').textContent = `$${km6_10Actual.toLocaleString('es-CL')}`;
-    document.getElementById('km10').textContent = `$${km10Actual.toLocaleString('es-CL')}`;
-    
-    // Limpiar y cargar cupones
-    const lista = document.getElementById('listaCupones');
-    lista.innerHTML = '';
-    
-    for (const clave in data.cupones) {
-      agregarCuponElemento(clave, data.cupones[clave]);
-    }
-    
-    mostrarMensaje('✅ Configuración cargada correctamente');
-  } catch (error) {
-    mostrarMensaje('❌ Error al cargar configuración', 'error');
-    console.error(error);
-  }
+  const resp = await fetch(`${BACKEND_URL}/config`);
+  const data = await resp.json();
+  document.getElementById('porcentajeAjuste').value = data.porcentajeAjuste;
+  const lista = document.getElementById('listaCupones'); lista.innerHTML = '';
+  for (const clave in data.cupones) agregarCuponElemento(clave, data.cupones[clave]);
 }
 
-// Agregar elemento de cupón al DOM
-function agregarCuponElemento(codigo = '', descuento = 0) {
+function agregarCuponElemento(codigo='', descuento=0){
   const lista = document.getElementById('listaCupones');
-  const div = document.createElement('div');
-  div.className = 'cupon-item';
-  
-  const inputCodigo = document.createElement('input');
-  inputCodigo.type = 'text';
-  inputCodigo.value = codigo;
-  inputCodigo.placeholder = 'Código (ej: DIA10)';
-  
-  const inputDescuento = document.createElement('input');
-  inputDescuento.type = 'number';
-  inputDescuento.value = descuento;
-  inputDescuento.min = 0;
-  inputDescuento.max = 100;
-  inputDescuento.placeholder = '%';
-  
-  const btnEliminar = document.createElement('button');
-  btnEliminar.textContent = '✖';
-  btnEliminar.onclick = () => {
-    lista.removeChild(div);
-    mostrarMensaje('Cupón eliminado de la lista');
-  };
-  
-  div.appendChild(inputCodigo);
-  div.appendChild(inputDescuento);
-  div.appendChild(btnEliminar);
-  lista.appendChild(div);
+  const div = document.createElement('div'); div.className='cupon-item';
+  const inputCodigo = document.createElement('input'); inputCodigo.type='text'; inputCodigo.value=codigo; inputCodigo.placeholder='Código';
+  const inputDescuento = document.createElement('input'); inputDescuento.type='number'; inputDescuento.value=descuento; inputDescuento.min=0; inputDescuento.max=100; inputDescuento.placeholder='%';
+  const btnEliminar = document.createElement('button'); btnEliminar.textContent='Borrar'; btnEliminar.onclick=()=>lista.removeChild(div);
+  div.appendChild(inputCodigo); div.appendChild(inputDescuento); div.appendChild(btnEliminar); lista.appendChild(div);
 }
 
-// Agregar cupón vacío
-function agregarCuponVacio() {
-  agregarCuponElemento('', 0);
-}
+document.getElementById('agregarCuponBtn').addEventListener('click',()=>agregarCuponElemento());
 
-// Restaurar valores originales (0%)
-async function restaurarOriginales() {
-  if(confirm('¿Restaurar tarifas a valores originales (0% de ajuste)?')) {
-    document.getElementById('porcentajeAjuste').value = 0;
-    await guardarCambios();
-  }
-}
+document.getElementById('guardarCambiosBtn').addEventListener('click',async()=>{
+  const porcentaje = parseFloat(document.getElementById('porcentajeAjuste').value)||0;
+  const cupones={};
+  document.querySelectorAll('.cupon-item').forEach(div=>{
+    const inputs=div.querySelectorAll('input');
+    const codigo=inputs[0].value.trim().toUpperCase();
+    const descuento=parseFloat(inputs[1].value)||0;
+    if(codigo) cupones[codigo]=descuento;
+  });
 
-// Guardar cambios en el backend
-async function guardarCambios() {
-  try {
-    const porcentaje = parseFloat(document.getElementById('porcentajeAjuste').value) || 0;
-    const cupones = {};
-    
-    document.querySelectorAll('.cupon-item').forEach(div => {
-      const inputs = div.querySelectorAll('input');
-      const codigo = inputs[0].value.trim().toUpperCase();
-      const descuento = parseFloat(inputs[1].value) || 0;
-      if (codigo && descuento > 0) {
-        cupones[codigo] = descuento;
-      }
-    });
-    
-    const resp = await fetch(`${BACKEND_URL}/config`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        nuevoPorcentaje: porcentaje, 
-        nuevosCupones: cupones 
-      })
-    });
-    
-    const data = await resp.json();
-    
-    if (data.ok) {
-      mostrarMensaje('✅ Cambios guardados correctamente');
-      cargarConfig(); // Recargar para mostrar los cambios
-    } else {
-      mostrarMensaje('❌ Error al guardar: ' + (data.error || 'Desconocido'), 'error');
-    }
-    
-  } catch (error) {
-    mostrarMensaje('❌ Error de conexión al guardar', 'error');
-    console.error(error);
-  }
-}
+  const resp = await fetch(`${BACKEND_URL}/config`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ nuevoPorcentaje: porcentaje, nuevosCupones: cupones })
+  });
 
-// Inicializar
+  const data = await resp.json();
+  if(data.ok) alert('Cambios guardados correctamente!');
+});
+
 cargarConfig();
 </script>
 </body>

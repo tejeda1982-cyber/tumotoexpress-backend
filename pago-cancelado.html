@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago Cancelado - TuMotoExpress.cl</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .cancel-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-5px); }
+        }
+
+        h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .cancel-badge {
+            background: #ff9800;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            display: inline-block;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 5px solid #ff9800;
+            text-align: left;
+        }
+
+        .info-box p {
+            margin: 10px 0;
+            color: #555;
+        }
+
+        .info-box i {
+            color: #ff9800;
+            margin-right: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .primary-button {
+            background: #ff4500;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 2;
+            transition: all 0.3s ease;
+        }
+
+        .primary-button:hover {
+            background: #ff5722;
+            transform: translateY(-2px);
+        }
+
+        .secondary-button {
+            background: #4a4a4a;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 1;
+            transition: all 0.3s ease;
+        }
+
+        .secondary-button:hover {
+            background: #666;
+        }
+
+        .back-button {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .back-button:hover {
+            background: #555;
+        }
+
+        .footer {
+            margin-top: 20px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        @media (max-width: 480px) {
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="cancel-icon">⚠️</div>
+        <span class="cancel-badge">PAGO CANCELADO</span>
+        <h1>Pago no completado</h1>
+        
+        <div class="message">
+            Has cancelado el proceso de pago. No te preocupes, tu cotización sigue vigente.
+        </div>
+
+        <div class="info-box">
+            <p><i>⏱️</i> <strong>¿Qué pasó?</strong><br>Cancelaste el pago antes de completarlo.</p>
+            <p><i>🔄</i> <strong>¿Qué puedo hacer?</strong><br>Puedes intentar pagar nuevamente cuando quieras.</p>
+            <p><i>⏳</i> <strong>Vigencia:</strong><br>Tu cotización está disponible por 30 minutos.</p>
+        </div>
+
+        <div class="button-group">
+            <button class="primary-button" onclick="window.location.href='/'">🔄 Intentar nuevamente</button>
+            <button class="secondary-button" onclick="window.location.href='/'">← Volver</button>
+        </div>
+
+        <a href="/" class="back-button">← Volver al cotizador</a>
+
+        <div class="footer">
+            TuMotoExpress.cl - Envíos rápidos y seguros
+        </div>
+    </div>
+</body>
+</html>
