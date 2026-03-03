@@ -9,14 +9,24 @@ body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
   background: #f5f6fa;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
+  display: block; /* cambio para que Chrome detecte scroll real */
 }
 
+.container {
+  background: white;
+  padding: 30px 20px;
+  border-radius: 20px;
+  width: 95%;
+  max-width: 480px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.2);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  margin: 40px auto; /* reemplaza el centrado vertical del flex */
+}
 /* LOGOS LATERALES (opacidad 1) */
 body::before {
   content: "";
