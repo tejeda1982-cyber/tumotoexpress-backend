@@ -195,13 +195,21 @@ async function calcularTramosSecuenciales(origen, destinos) {
   }
 }
 
-// CALCULA PRECIO DE UN TRAMO INDIVIDUAL
+// CALCULA PRECIO DE UN TRAMO INDIVIDUAL - CORREGIDA
 function calcularPrecioTramo(distancia_km) {
+  // Para tramos de hasta 6 km: tarifa fija
   if (distancia_km <= 6) {
     return tarifa_base;
-  } else if (distancia_km <= 10) {
-    return Math.round(distancia_km * km_adicional_6_10);
-  } else {
+  } 
+  // Para tramos entre 6.01 y 10 km: tarifa base + km adicionales
+  else if (distancia_km <= 10) {
+    // Ejemplo: 8 km = $6000 + (2 km × $1000) = $8000
+    const kmAdicionales = distancia_km - 6;
+    return Math.round(tarifa_base + (kmAdicionales * km_adicional_6_10));
+  } 
+  // Para tramos mayores a 10 km: precio por km
+  else {
+    // Ejemplo: 12 km = 12 × $850 = $10200
     return Math.round(distancia_km * km_adicional_10_mas);
   }
 }
