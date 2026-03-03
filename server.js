@@ -132,61 +132,47 @@ async function calcularDistanciaYTiempo(origen, destino) {
   }
 }
 
-// 🔴 CALCULA TRAMOS SECUENCIALES (inicio → destino1 → destino2 → destino3 → destino4...)
-// 🔴 VERSIÓN CORREGIDA - Cada tramo se calcula desde el punto anterior
+// 🔴 CALCULA TRAMOS SECUENCIALES (cada tramo desde el último destino)
 async function calcularTramosSecuenciales(origen, destinos) {
-  if (!process.env.GOOGLE_MAPS_BACKEND_KEY || destinos.length === 0) {
+  if (!process.env.GOOGLE_MAPS_BACKEND_KEY || !Array.isArray(destinos) || destinos.length === 0) {
     return [];
   }
-  
-  try {
-    console.log("🔄 Calculando tramos secuenciales");
-    console.log(`📍 Origen: ${origen}`);
-    console.log(`📍 Destinos: ${destinos.map((d, i) => `Destino ${i+1}: ${d}`).join(" → ")}`);
-    
-    const resultados = [];
-    let puntoAnterior = origen;
-    let distanciaTotal = 0;
-    let tiempoTotal = 0;
-    
-    // Calcular CADA tramo desde el punto anterior (NO desde el inicio)
-    for (let i = 0; i < destinos.length; i++) {
-      const destinoActual = destinos[i];
-      
-      console.log(`📍 Tramo ${i + 1}: "${puntoAnterior}" → "${destinoActual}"`);
-      
-      // Calcular distancia y tiempo ENTRE el punto anterior y el destino actual
-      const { km, minutos } = await calcularDistanciaYTiempo(puntoAnterior, destinoActual);
-      
-      // Calcular precio de ESTE TRAMO específico
-      const precioTramo = calcularPrecioTramo(km);
-      
-      resultados.push({
-        numero: i + 1,
-        desde: puntoAnterior,
-        direccion: destinoActual,
-        distancia_km: km,
-        tiempo_minutos: minutos,
-        precio: precioTramo
-      });
-      
-      distanciaTotal += km;
-      tiempoTotal += minutos;
-      
-      // ACTUALIZAR puntoAnterior para el siguiente tramo (¡esto es CRÍTICO!)
-      puntoAnterior = destinoActual;
-      
-      console.log(`   ✅ Tramo ${i+1}: ${km.toFixed(2)} km, $${precioTramo}`);
-    }
-    
-    console.log(`✅ Totales: ${distanciaTotal.toFixed(2)} km, ${tiempoTotal} min`);
-    
-    return {
-      tramos: resultados,
-      distancia_total_km: distanciaTotal,
-      tiempo_total_minutos: tiempoTotal
-    };
-  } catch (err) {
+
+  const resultados = [];
+  let puntoAnterior = origen; // el primer tramo inicia desde el punto inicial
+  let distanciaTotal = 0;
+  let tiempoTotal = 0;
+
+  for (let i = 0; i < destinos.length; i++) {
+    const destinoActual = destinos[i];
+
+    console.log(`📍 Tramo ${i + 1}: ${puntoAnterior} → ${destinoActual}`);
+
+    const { km, minutos } = await calcularDistanciaYTiempo(puntoAnterior, destinoActual);
+    const precioTramo = calcularPrecioTramo(km);
+
+    resultados.push({
+      numero: i + 1,
+      desde: puntoAnterior,
+      direccion: destinoActual,
+      distancia_km: km,
+      tiempo_minutos: minutos,
+      precio: precioTramo
+    });
+
+    distanciaTotal += km;
+    tiempoTotal += minutos;
+
+    // **Clave:** actualizar puntoAnterior para que el próximo tramo inicie desde aquí
+    puntoAnterior = destinoActual;
+  }
+
+  return {
+    tramos: resultados,
+    distancia_total_km: distanciaTotal,
+    tiempo_total_minutos: tiempoTotal
+  };
+} catch (err) {
     console.error("❌ Error calculando tramos secuenciales:", err);
     
     // Fallback: aún así calcular tramos desde el punto anterior
