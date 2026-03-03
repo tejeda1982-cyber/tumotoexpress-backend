@@ -527,12 +527,12 @@ button:active { transform: translateY(0); }
   </div>
 
   <!-- Dirección de origen -->
-  <input type="text" id="inicio" placeholder="Dirección de origen (ej: Av. Providencia 123, Providencia)">
+  <input type="text" id="inicio" placeholder="Dirección de origen">
   
   <!-- Contenedor para múltiples destinos -->
   <div id="destinosContainer">
     <div class="destino-adicional" id="destino-1">
-      <input type="text" class="destino-input" placeholder="Dirección de destino 1 (incluye comuna)">
+      <input type="text" class="destino-input" placeholder="Dirección de destino 1">
     </div>
   </div>
   
@@ -577,36 +577,17 @@ function cerrarModalWebPay() {
   document.getElementById('webpayModal').style.display = 'none';
 }
 
-// ===== FUNCIÓN INIT AUTOCOMPLETE CORREGIDA =====
 function initAutocomplete() {
   const options = { 
-    types: ["address"], // Cambiado de "geocode" a "address" para direcciones más específicas
+    types: ["geocode", "establishment"], 
     componentRestrictions: { country: "cl" }, 
-    fields: ["formatted_address", "address_components", "geometry", "name"] 
+    fields: ["formatted_address", "geometry", "name"] 
   };
   
-  // Autocomplete para origen
-  const inicioInput = document.getElementById("inicio");
-  const inicioAutocomplete = new google.maps.places.Autocomplete(inicioInput, options);
+  new google.maps.places.Autocomplete(document.getElementById("inicio"), options);
   
-  // Forzar formato completo cuando se selecciona una opción
-  inicioAutocomplete.addListener('place_changed', function() {
-    const place = inicioAutocomplete.getPlace();
-    if (place.formatted_address) {
-      inicioInput.value = place.formatted_address;
-    }
-  });
-  
-  // Autocomplete para cada destino
   document.querySelectorAll('.destino-input').forEach(input => {
-    const autocomplete = new google.maps.places.Autocomplete(input, options);
-    
-    autocomplete.addListener('place_changed', function() {
-      const place = autocomplete.getPlace();
-      if (place.formatted_address) {
-        input.value = place.formatted_address;
-      }
-    });
+    new google.maps.places.Autocomplete(input, options);
   });
 }
 
@@ -619,26 +600,18 @@ function agregarDestino() {
   nuevoDestino.id = `destino-${contadorDestinos}`;
   
   nuevoDestino.innerHTML = `
-    <input type="text" class="destino-input" placeholder="Dirección de destino ${contadorDestinos} (incluye comuna)">
+    <input type="text" class="destino-input" placeholder="Dirección de destino ${contadorDestinos}">
     <button class="btn-eliminar" onclick="eliminarDestino(${contadorDestinos})">✖</button>
   `;
   
   container.appendChild(nuevoDestino);
   
   const options = { 
-    types: ["address"], 
+    types: ["geocode", "establishment"], 
     componentRestrictions: { country: "cl" }, 
-    fields: ["formatted_address", "address_components", "geometry", "name"] 
+    fields: ["formatted_address", "geometry", "name"] 
   };
-  
-  const autocomplete = new google.maps.places.Autocomplete(nuevoDestino.querySelector('input'), options);
-  
-  autocomplete.addListener('place_changed', function() {
-    const place = autocomplete.getPlace();
-    if (place.formatted_address) {
-      nuevoDestino.querySelector('input').value = place.formatted_address;
-    }
-  });
+  new google.maps.places.Autocomplete(nuevoDestino.querySelector('input'), options);
 }
 
 function eliminarDestino(id) {
@@ -656,7 +629,7 @@ function reenumerarDestinos() {
   destinos.forEach((destino, index) => {
     const input = destino.querySelector('.destino-input');
     const nuevoNumero = index + 1;
-    input.placeholder = `Dirección de destino ${nuevoNumero} (incluye comuna)`;
+    input.placeholder = `Dirección de destino ${nuevoNumero}`;
     destino.id = `destino-${nuevoNumero}`;
     
     const btnEliminar = destino.querySelector('.btn-eliminar');
@@ -943,4 +916,54 @@ async function cotizar() {
     // ============================================
     // BOTÓN PAGAR CON WEBPAY - SOLO MUESTRA MODAL
     // ============================================
-    const
+    const btnPagar = document.getElementById("btnPagar");
+    btnPagar.style.display = "block";
+    btnPagar.onclick = function() {
+      // Verificar que hay una cotización
+      if (!window.ultimaCotizacion || !window.ultimaCotizacion.codigoCotizacion) {
+        alert("❌ Primero debes realizar una cotización");
+        return;
+      }
+      
+      // Verificar que los datos del cliente están completos
+      const nombre = document.getElementById("nombreCliente").value;
+      const correo = document.getElementById("correoCliente").value;
+      const telefono = document.getElementById("telefonoCliente").value;
+      
+      if (!nombre || !correo || !telefono) {
+        alert("❌ Completa todos los datos del cliente");
+        return;
+      }
+      
+      // Validar email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(correo)) {
+        alert("❌ Ingresa un correo válido");
+        return;
+      }
+      
+      // Validar teléfono
+      const telefonoRegex = /^[0-9]{9}$/;
+      if (!telefonoRegex.test(telefono)) {
+        alert("❌ Ingresa un teléfono válido de 9 dígitos");
+        return;
+      }
+      
+      // MOSTRAR MODAL EN LUGAR DE REDIRIGIR
+      mostrarModalWebPay();
+    };
+
+  } catch (err) { 
+    spinner.style.display = "none"; 
+    console.error(err); 
+    alert("❌ Error al cotizar: " + err.message); 
+  }
+}
+
+// Cerrar modal si se hace clic en el overlay
+document.getElementById('modalOverlay').addEventListener('click', cerrarModalWebPay);
+
+window.onload = initAutocomplete;
+</script>
+</body>
+</html>
