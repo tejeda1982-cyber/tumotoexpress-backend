@@ -121,12 +121,12 @@
                                 </tr>
                             </table>
                             
-                            <!-- TARJETA DE PRECIOS - CON FRASE SUPERPUESTA ENTRE NETO E IVA -->
+                            <!-- TARJETA DE PRECIOS - UNIFORME CON DETALLES DEL VIAJE -->
                             <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#f9f9f9" style="background-color:#f9f9f9; border-radius:14px; border:1px solid #e0e0e0; margin:16px 0;">
                                 <tr>
                                     <td style="padding:16px;">
                                         
-                                        <!-- TÍTULO -->
+                                        <!-- TÍTULO CON LÍNEA NARANJA (IGUAL QUE DETALLES DEL VIAJE) -->
                                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td style="border-bottom:2px solid #ff4500; padding-bottom:10px; margin-bottom:12px;">
@@ -135,45 +135,40 @@
                                             </tr>
                                         </table>
                                         
-                                        <!-- CONTENEDOR CON POSICIÓN RELATIVA PARA SUPERPOSICIÓN -->
-                                        <div style="position:relative; width:100%; margin:5px 0;">
-                                            
-                                            <!-- FRASE SUPERPUESTA "TuMotoExpress.cl" EN ROJO -->
-                                            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:100%; text-align:center; pointer-events:none; z-index:1; line-height:1;">
-                                                <span style="color:#ff4500; font-size:28px; font-weight:bold; opacity:0.6; letter-spacing:2px; white-space:nowrap;">TuMotoExpress.cl</span>
-                                            </div>
-                                            
-                                            <!-- CONTENIDO NORMAL (NETO E IVA) - SIN ALTERAR -->
-                                            <div style="position:relative; z-index:2;">
-                                                
-                                                <!-- NETO -->
-                                                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0;">
-                                                    <tr>
-                                                        <td style="padding:8px 3px 8px 3px; border-bottom:1px dashed #dddddd;">Neto:</td>
-                                                        <td style="padding:8px 3px 8px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{neto}}</td>
-                                                    </tr>
-                                                </table>
-                                                
-                                                <!-- DESCUENTO (SI EXISTE) -->
-                                                {{#if descuento}}
-                                                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0;">
-                                                    <tr>
-                                                        <td style="padding:8px 3px 8px 3px; border-bottom:1px dashed #dddddd; color:#27ae60;">🎟️ Descuento aplicado:</td>
-                                                        <td style="padding:8px 3px 8px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600; color:#27ae60;">-${{descuento}}</td>
-                                                    </tr>
-                                                </table>
-                                                {{/if}}
-                                                
-                                                <!-- IVA -->
-                                                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0;">
-                                                    <tr>
-                                                        <td style="padding:8px 3px 8px 3px; border-bottom:1px dashed #dddddd;">IVA (19%):</td>
-                                                        <td style="padding:8px 3px 8px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{iva}}</td>
-                                                    </tr>
-                                                </table>
-                                                
-                                            </div>
-                                        </div>
+                                        <!-- FRASE TuMotoExpress.cl CENTRADA (16px BOLD, ROJO) -->
+                                        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td align="center" style="padding:0 0 8px 0;">
+                                                    <span style="font-size:16px; color:#ff0000; font-weight:bold;">TuMotoExpress.cl</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <!-- NETO -->
+                                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0;">
+                                            <tr>
+                                                <td style="padding:5px 3px 5px 3px; border-bottom:1px dashed #dddddd;">Neto:</td>
+                                                <td style="padding:5px 3px 5px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{neto}}</td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <!-- DESCUENTO (SI EXISTE) -->
+                                        {{#if descuento}}
+                                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0;">
+                                            <tr>
+                                                <td style="padding:5px 3px 5px 3px; border-bottom:1px dashed #dddddd; color:#27ae60;">🎟️ Descuento aplicado:</td>
+                                                <td style="padding:5px 3px 5px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600; color:#27ae60;">-${{descuento}}</td>
+                                            </tr>
+                                        </table>
+                                        {{/if}}
+                                        
+                                        <!-- IVA -->
+                                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0;">
+                                            <tr>
+                                                <td style="padding:5px 3px 5px 3px; border-bottom:1px dashed #dddddd;">IVA (19%):</td>
+                                                <td style="padding:5px 3px 5px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{iva}}</td>
+                                            </tr>
+                                        </table>
                                         
                                         <!-- TOTAL -->
                                         <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background-color:#000000; border-radius:14px; margin:15px 0 5px;">
