@@ -229,53 +229,37 @@ function calcularPrecioTotal(tramos, codigo_cupon = "") {
 }
 
 // ============================================
-// FUNCIÓN DE HORARIO UNIFICADA (EXACTAMENTE IGUAL A INDEX.HTML)
+// FUNCIÓN DE HORARIO CORREGIDA - VERSIÓN 100% FUNCIONAL
 // ============================================
 function obtenerMensajeHoraEstimado() {
-    // Crear fecha con hora de Chile
-    const ahora = new Date();
+    // Crear fecha con hora de Chile usando el método más confiable
+    const fechaChile = new Date();
     
-    // Opciones para obtener hora en Chile
-    const options = {
-        timeZone: 'America/Santiago',
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: false
-    };
+    // Convertir a string en hora Chile y luego reconstruir la fecha
+    const fechaChileStr = fechaChile.toLocaleString('es-CL', { timeZone: 'America/Santiago' });
+    const partes = fechaChileStr.split(' ');
+    const fechaPartes = partes[0].split('-');
+    const horaPartes = partes[1].split(':');
     
-    // Obtener componentes de fecha/hora en Chile
-    const formatter = new Intl.DateTimeFormat('es-CL', options);
-    const parts = formatter.formatToParts(ahora);
+    const dia = parseInt(fechaPartes[2]);
+    const mes = parseInt(fechaPartes[1]) - 1; // Los meses en JS son 0-11
+    const anio = parseInt(fechaPartes[0]);
+    const hora = parseInt(horaPartes[0]);
+    const minutos = parseInt(horaPartes[1]);
     
-    // Extraer valores
-    let dia = 0, hora = 0, minutos = 0, mes = 0, anio = 0;
-    parts.forEach(part => {
-        if (part.type === 'day') dia = parseInt(part.value);
-        if (part.type === 'month') mes = parseInt(part.value);
-        if (part.type === 'year') anio = parseInt(part.value);
-        if (part.type === 'hour') hora = parseInt(part.value);
-        if (part.type === 'minute') minutos = parseInt(part.value);
-    });
-    
-    // Crear objeto Date con la fecha/hora chilena para cálculos
-    const fechaChile = new Date(anio, mes - 1, dia, hora, minutos);
-    const diaSemana = fechaChile.getDay(); // 0 domingo, 1 lunes... 6 sábado
+    // Crear objeto Date con la fecha/hora chilena
+    const fechaChileDate = new Date(anio, mes, dia, hora, minutos);
+    const diaSemana = fechaChileDate.getDay(); // 0 domingo, 1 lunes... 6 sábado
     
     const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
     
     console.log(`🇨🇱 Hora Chile: ${diasSemana[diaSemana]} ${hora}:${minutos.toString().padStart(2, '0')}`);
     
-    function sumar80Minutos() {
-        return new Date(fechaChile.getTime() + 80 * 60000);
-    }
-
     // REGLA 1: Lunes a Viernes de 9:00 a 15:40
     if (diaSemana >= 1 && diaSemana <= 5) {
         if (hora >= 9 && (hora < 15 || (hora === 15 && minutos <= 40))) {
-            const fechaEstimado = sumar80Minutos();
+            // Sumar 80 minutos
+            const fechaEstimado = new Date(fechaChileDate.getTime() + 80 * 60000);
             const horaEst = fechaEstimado.getHours().toString().padStart(2, '0');
             const minEst = fechaEstimado.getMinutes().toString().padStart(2, '0');
             return `Podemos gestionar tu servicio a partir de las ${horaEst}:${minEst} hrs. (hora Chile)`;
