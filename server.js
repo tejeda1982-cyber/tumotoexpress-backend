@@ -349,7 +349,7 @@ async function enviarCorreos(cliente, cotizacion) {
       return false;
     }
 
-    const codigoCotizacion = generarCodigoCotizacion();
+    const codigoCotizacion = cotizacion.codigoCotizacion;
     console.log("🔑 Código de cotización generado:", codigoCotizacion);
 
     const formatearNumero = (num) => {
