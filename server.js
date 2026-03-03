@@ -228,48 +228,75 @@ function calcularPrecioTotal(tramos, codigo_cupon = "") {
   return { neto, descuentoValor, descuentoTexto, iva, total, netoConDescuento };
 }
 
-// FUNCIÓN PARA OBTENER MENSAJE DE HORARIO (ACTUALIZADA)
+// FUNCIÓN PARA OBTENER MENSAJE DE HORARIO (CON HORA DE CHILE)
 function obtenerMensajeHoraEstimado() {
+  // Crear fecha con hora de Chile
   const ahora = new Date();
-  const dia = ahora.getDay(); // 0 domingo, 1 lunes, 2 martes, 3 miércoles, 4 jueves, 5 viernes, 6 sábado
-  const hora = ahora.getHours();
-  const minutos = ahora.getMinutes();
+  
+  // Obtener componentes de fecha/hora en Chile usando Intl
+  const options = {
+    timeZone: 'America/Santiago',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false
+  };
+  
+  const formatter = new Intl.DateTimeFormat('es-CL', options);
+  const parts = formatter.formatToParts(ahora);
+  
+  // Extraer valores
+  let dia = 0, hora = 0, minutos = 0;
+  parts.forEach(part => {
+    if (part.type === 'day') dia = parseInt(part.value);
+    if (part.type === 'hour') hora = parseInt(part.value);
+    if (part.type === 'minute') minutos = parseInt(part.value);
+  });
+  
+  // Obtener día de la semana en Chile
+  const fechaChile = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Santiago' }));
+  const diaSemana = fechaChile.getDay(); // 0 domingo, 1 lunes... 6 sábado
+  
   const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
   
   function sumar80Minutos(fecha) {
     return new Date(fecha.getTime() + 80 * 60000);
   }
 
-  // REGLA 1: Lunes a Viernes de 9:00 a 15:40
-  if (dia >= 1 && dia <= 5) {
+  // REGLA 1: Lunes a Viernes de 9:00 a 15:40 (hora Chile)
+  if (diaSemana >= 1 && diaSemana <= 5) {
     if (hora >= 9 && (hora < 15 || (hora === 15 && minutos <= 40))) {
-      const fechaEstimado = sumar80Minutos(ahora);
-      return `Podemos gestionar tu servicio a partir de las ${fechaEstimado.getHours().toString().padStart(2, '0')}:${fechaEstimado.getMinutes().toString().padStart(2, '0')} hrs.`;
+      const fechaEstimado = new Date(fechaChile.getTime() + 80 * 60000);
+      const horaEst = fechaEstimado.getHours().toString().padStart(2, '0');
+      const minEst = fechaEstimado.getMinutes().toString().padStart(2, '0');
+      return `Podemos gestionar tu servicio a partir de las ${horaEst}:${minEst} hrs. (hora Chile)`;
     }
   }
 
-  // REGLA 2: Lunes a Viernes de 00:00 a 8:59
-  if (dia >= 1 && dia <= 5 && hora < 9) {
-    return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos gestionar tu envío para el día de hoy ${diasSemana[dia]} durante la mañana.`;
+  // REGLA 2: Lunes a Viernes de 00:00 a 8:59 (hora Chile)
+  if (diaSemana >= 1 && diaSemana <= 5 && hora < 9) {
+    return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos gestionar tu envío para el día de hoy ${diasSemana[diaSemana]} durante la mañana.`;
   }
 
-  // REGLA 3: Lunes a Jueves de 15:41 a 23:59
-  if (dia >= 1 && dia <= 4 && (hora > 15 || (hora === 15 && minutos > 40))) {
-    return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podríamos agendar tu envío para el día de mañana ${diasSemana[dia + 1]} durante la mañana.`;
+  // REGLA 3: Lunes a Jueves de 15:41 a 23:59 (hora Chile)
+  if (diaSemana >= 1 && diaSemana <= 4 && (hora > 15 || (hora === 15 && minutos > 40))) {
+    return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podríamos agendar tu envío para el día de mañana ${diasSemana[diaSemana + 1]} durante la mañana.`;
   }
 
-  // REGLA 4: Viernes después de 15:40
-  if (dia === 5 && (hora > 15 || (hora === 15 && minutos > 40))) {
+  // REGLA 4: Viernes después de 15:40 (hora Chile)
+  if (diaSemana === 5 && (hora > 15 || (hora === 15 && minutos > 40))) {
     return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
   }
 
   // REGLA 5: Sábado todo el día
-  if (dia === 6) {
+  if (diaSemana === 6) {
     return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
   }
 
   // REGLA 6: Domingo todo el día
-  if (dia === 0) {
+  if (diaSemana === 0) {
     return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
   }
 
@@ -287,7 +314,7 @@ function generarCodigoCotizacion() {
   return codigo;
 }
 
-// 🔴 FUNCIÓN PARA ENVIAR CORREOS - SOLO CAMBIÉ LA GENERACIÓN DE TRAMOSHTML
+// 🔴 FUNCIÓN PARA ENVIAR CORREOS
 async function enviarCorreos(cliente, cotizacion) {
   console.log("📧 Iniciando envío de correos...");
   
@@ -322,7 +349,7 @@ async function enviarCorreos(cliente, cotizacion) {
       return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     };
 
-    // 🔴 GENERAR HTML PARA LOS TRAMOS CON TABLAS (COMPATIBLE OUTLOOK)
+    // GENERAR HTML PARA LOS TRAMOS
     let tramosHtml = '';
     cotizacion.tramos.forEach((tramo) => {
       tramosHtml += `
@@ -419,7 +446,7 @@ async function enviarCorreos(cliente, cotizacion) {
 }
 
 // ============================================
-// ENDPOINT COTIZAR - MODIFICADO PARA INCLUIR CÓDIGO
+// ENDPOINT COTIZAR
 // ============================================
 app.post("/cotizar", async (req, res) => {
   console.log("📩 POST /cotizar recibido");
@@ -457,7 +484,7 @@ app.post("/cotizar", async (req, res) => {
       ...precios
     };
 
-    // GUARDAR EN MEMORIA TEMPORAL (para seguridad al pagar)
+    // GUARDAR EN MEMORIA TEMPORAL
     cotizacionesTemp[codigoCotizacion] = {
       monto: precios.total,
       timestamp: Date.now()
@@ -499,7 +526,7 @@ app.post("/iniciar-pago-webpay", async (req, res) => {
     
     console.log("💳 Iniciando pago WebPay:", { buyOrder, amount, sessionId });
     
-    // 🔒 SEGURIDAD: Verificar que la cotización existe y usar el monto REAL
+    // 🔒 SEGURIDAD: Verificar que la cotización existe
     const cotizacionGuardada = cotizacionesTemp[buyOrder];
     
     if (!cotizacionGuardada) {
@@ -509,24 +536,24 @@ app.post("/iniciar-pago-webpay", async (req, res) => {
       });
     }
     
-    // USAR EL MONTO REAL GUARDADO, NO EL QUE ENVÍA EL CLIENTE
+    // USAR EL MONTO REAL GUARDADO
     const montoReal = cotizacionGuardada.monto;
     
     console.log(`🔒 Seguridad: Cliente envió $${amount}, pero real es $${montoReal}`);
     
     // Determinar la URL base
     const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://tudominio.com'  // CAMBIA ESTO POR TU DOMINIO REAL
+      ? 'https://tumotoexpress.cl'  // CAMBIA POR TU DOMINIO REAL
       : `http://localhost:${PORT}`;
     
     const returnUrl = `${baseUrl}/confirmar-pago-webpay`;
     
-    // Crear la transacción en Transbank con el monto REAL
+    // Crear la transacción en Transbank
     const response = await webpay.create(
-      buyOrder,      // Código de cotización
-      sessionId,     // ID de sesión
-      montoReal,     // Usamos el monto guardado, no el del cliente
-      returnUrl      // URL de retorno
+      buyOrder,
+      sessionId,
+      montoReal,
+      returnUrl
     );
     
     console.log("✅ Transacción WebPay creada:", response);
@@ -555,7 +582,6 @@ app.get('/confirmar-pago-webpay', async (req, res) => {
     
     console.log("📩 Confirmación de pago WebPay recibida:", { token_ws, TBK_TOKEN });
     
-    // Si el usuario canceló o hubo error
     if (TBK_TOKEN) {
       return res.redirect('/pago-cancelado.html');
     }
@@ -564,22 +590,15 @@ app.get('/confirmar-pago-webpay', async (req, res) => {
       return res.status(400).send('No se recibió token de pago');
     }
     
-    // Confirmar la transacción con Transbank
     const response = await webpay.commit(token_ws);
     
     console.log('📊 Respuesta de confirmación WebPay:', response);
     
     if (response.status === 'AUTHORIZED') {
-      // PAGO EXITOSO
       console.log(`✅ Pago exitoso para orden: ${response.buy_order}, monto: $${response.amount}`);
-      
-      // Opcional: Eliminar la cotización temporal (ya se pagó)
       delete cotizacionesTemp[response.buy_order];
-      
-      // Redirigir a página de éxito
       res.redirect(`/pago-exitoso.html?orden=${response.buy_order}`);
     } else {
-      // Pago fallido
       console.log(`❌ Pago fallido: ${response.status}`);
       res.redirect('/pago-fallido.html');
     }
