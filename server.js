@@ -228,10 +228,10 @@ function calcularPrecioTotal(tramos, codigo_cupon = "") {
   return { neto, descuentoValor, descuentoTexto, iva, total, netoConDescuento };
 }
 
-// FUNCIÓN PARA OBTENER MENSAJE DE HORARIO
+// FUNCIÓN PARA OBTENER MENSAJE DE HORARIO (ACTUALIZADA)
 function obtenerMensajeHoraEstimado() {
   const ahora = new Date();
-  const dia = ahora.getDay();
+  const dia = ahora.getDay(); // 0 domingo, 1 lunes, 2 martes, 3 miércoles, 4 jueves, 5 viernes, 6 sábado
   const hora = ahora.getHours();
   const minutos = ahora.getMinutes();
   const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
@@ -240,19 +240,41 @@ function obtenerMensajeHoraEstimado() {
     return new Date(fecha.getTime() + 80 * 60000);
   }
 
-  if (dia >= 1 && dia <= 4 && hora < 9) {
-    return `Gracias por cotizar. Estamos fuera de horario, pero podemos gestionar tu servicio para hoy ${diasSemana[dia]} durante la mañana.`;
-  }
+  // REGLA 1: Lunes a Viernes de 9:00 a 15:40
   if (dia >= 1 && dia <= 5) {
     if (hora >= 9 && (hora < 15 || (hora === 15 && minutos <= 40))) {
       const fechaEstimado = sumar80Minutos(ahora);
       return `Podemos gestionar tu servicio a partir de las ${fechaEstimado.getHours().toString().padStart(2, '0')}:${fechaEstimado.getMinutes().toString().padStart(2, '0')} hrs.`;
     }
   }
-  if (dia >= 1 && dia <= 4 && hora > 15) {
-    return `Fuera de horario, podemos gestionar tu servicio para mañana ${diasSemana[dia + 1]} durante la mañana.`;
+
+  // REGLA 2: Lunes a Viernes de 00:00 a 8:59
+  if (dia >= 1 && dia <= 5 && hora < 9) {
+    return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos gestionar tu envío para el día de hoy ${diasSemana[dia]} durante la mañana.`;
   }
-  return `Podemos gestionar tu servicio el lunes durante la mañana.`;
+
+  // REGLA 3: Lunes a Jueves de 15:41 a 23:59
+  if (dia >= 1 && dia <= 4 && (hora > 15 || (hora === 15 && minutos > 40))) {
+    return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podríamos agendar tu envío para el día de mañana ${diasSemana[dia + 1]} durante la mañana.`;
+  }
+
+  // REGLA 4: Viernes después de 15:40
+  if (dia === 5 && (hora > 15 || (hora === 15 && minutos > 40))) {
+    return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
+  }
+
+  // REGLA 5: Sábado todo el día
+  if (dia === 6) {
+    return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
+  }
+
+  // REGLA 6: Domingo todo el día
+  if (dia === 0) {
+    return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
+  }
+
+  // Fallback por si algo no está cubierto
+  return `Gracias por cotizar en TuMotoExpress.cl. Te contactaremos a la brevedad.`;
 }
 
 // FUNCIÓN PARA GENERAR CÓDIGO ALFANUMÉRICO

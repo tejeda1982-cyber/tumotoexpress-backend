@@ -649,55 +649,54 @@ function obtenerTodosLosDestinos() {
   return destinos;
 }
 
-/* 🔵 FUNCIÓN MODIFICADA SEGÚN TU LÓGICA EXACTA */
+// FUNCIÓN DE HORARIO ACTUALIZADA - EXACTAMENTE IGUAL A LA DEL SERVER.JS
 function obtenerMensajeHoraEstimado() {
     const ahora = new Date();
-    const dia = ahora.getDay(); // 0=Domingo, 1=Lunes ... 6=Sábado
+    const dia = ahora.getDay(); // 0 domingo, 1 lunes, 2 martes, 3 miércoles, 4 jueves, 5 viernes, 6 sábado
     const hora = ahora.getHours();
     const minutos = ahora.getMinutes();
-
-    const diasSemana = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
-
+    const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+    
     function sumar80Minutos(fecha) {
         return new Date(fecha.getTime() + 80 * 60000);
     }
 
-    // 1️⃣ Lunes a viernes entre 00:00 y 08:59
-    if (dia >= 1 && dia <= 5 && hora < 9) {
-        return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario comercial, pero podemos gestionar tu servicio para hoy ${diasSemana[dia]} durante la mañana (sujeto a disponibilidad).`;
-    }
-
-    // 2️⃣ Lunes a viernes entre 09:00 y 15:40
+    // REGLA 1: Lunes a Viernes de 9:00 a 15:40
     if (dia >= 1 && dia <= 5) {
-        if (
-            hora > 9 && hora < 15 ||
-            hora === 9 ||
-            (hora === 15 && minutos <= 40)
-        ) {
+        if (hora >= 9 && (hora < 15 || (hora === 15 && minutos <= 40))) {
             const fechaEstimado = sumar80Minutos(ahora);
-            const horasStr = fechaEstimado.getHours().toString().padStart(2, '0');
-            const minutosStr = fechaEstimado.getMinutes().toString().padStart(2, '0');
-
-            return `Gracias por cotizar en TuMotoExpress.cl. Podemos gestionar tu servicio a partir de las ${horasStr}:${minutosStr} horas aproximadamente (sujeto a disponibilidad).`;
+            return `Podemos gestionar tu servicio a partir de las ${fechaEstimado.getHours().toString().padStart(2, '0')}:${fechaEstimado.getMinutes().toString().padStart(2, '0')} hrs.`;
         }
     }
 
-    // 3️⃣ Lunes a jueves después de 15:40
-    if (dia >= 1 && dia <= 4) {
-        const manana = new Date(ahora);
-        manana.setDate(ahora.getDate() + 1);
-        return `Gracias por cotizar en TuMotoExpress.cl En este momento nos encontramos fuera de horario comercial, podemos gestionar tu servicio para mañana ${diasSemana[manana.getDay()]} durante la mañana (sujeto a disponibilidad).`;
+    // REGLA 2: Lunes a Viernes de 00:00 a 8:59
+    if (dia >= 1 && dia <= 5 && hora < 9) {
+        return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos gestionar tu envío para el día de hoy ${diasSemana[dia]} durante la mañana.`;
     }
 
-    // 4️⃣ Viernes después de 15:40, sábado o domingo
-    const lunes = new Date(ahora);
-    while (lunes.getDay() !== 1) {
-        lunes.setDate(lunes.getDate() + 1);
+    // REGLA 3: Lunes a Jueves de 15:41 a 23:59
+    if (dia >= 1 && dia <= 4 && (hora > 15 || (hora === 15 && minutos > 40))) {
+        return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podríamos agendar tu envío para el día de mañana ${diasSemana[dia + 1]} durante la mañana.`;
     }
 
-    return `Gracias por cotizar en TuMotoExpress.cl En este momento nos encontramos fuera de horario comercial, podemos gestionar tu servicio para el día lunes durante la mañana (sujeto a disponibilidad).`;
+    // REGLA 4: Viernes después de 15:40
+    if (dia === 5 && (hora > 15 || (hora === 15 && minutos > 40))) {
+        return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
+    }
+
+    // REGLA 5: Sábado todo el día
+    if (dia === 6) {
+        return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
+    }
+
+    // REGLA 6: Domingo todo el día
+    if (dia === 0) {
+        return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
+    }
+
+    // Fallback por si algo no está cubierto
+    return `Gracias por cotizar en TuMotoExpress.cl. Te contactaremos a la brevedad.`;
 }
-
 
 async function cotizar() {
   const inicio = document.getElementById("inicio").value;
