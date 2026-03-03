@@ -9,24 +9,14 @@ body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
   background: #f5f6fa;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
-  display: block; /* cambio para que Chrome detecte scroll real */
 }
 
-.container {
-  background: white;
-  padding: 30px 20px;
-  border-radius: 20px;
-  width: 95%;
-  max-width: 480px;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.2);
-  text-align: center;
-  position: relative;
-  z-index: 1;
-  margin: 40px auto; /* reemplaza el centrado vertical del flex */
-}
 /* LOGOS LATERALES (opacidad 1) */
 body::before {
   content: "";
@@ -659,9 +649,7 @@ function obtenerTodosLosDestinos() {
   return destinos;
 }
 
-// ============================================
-// FUNCIÓN DE HORARIO UNIFICADA (CON HORA DE CHILE)
-// ============================================
+// FUNCIÓN DE HORARIO ACTUALIZADA - CON HORA DE CHILE (IGUAL QUE EN SERVER.JS)
 function obtenerMensajeHoraEstimado() {
     // Crear fecha con hora de Chile
     const ahora = new Date();
@@ -682,50 +670,46 @@ function obtenerMensajeHoraEstimado() {
     const parts = formatter.formatToParts(ahora);
     
     // Extraer valores
-    let dia = 0, hora = 0, minutos = 0, mes = 0, anio = 0;
+    let dia = 0, hora = 0, minutos = 0;
     parts.forEach(part => {
         if (part.type === 'day') dia = parseInt(part.value);
-        if (part.type === 'month') mes = parseInt(part.value);
-        if (part.type === 'year') anio = parseInt(part.value);
         if (part.type === 'hour') hora = parseInt(part.value);
         if (part.type === 'minute') minutos = parseInt(part.value);
     });
     
-    // Crear objeto Date con la fecha/hora chilena para cálculos
-    const fechaChile = new Date(anio, mes - 1, dia, hora, minutos);
+    // Obtener día de la semana en Chile
+    const fechaChile = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Santiago' }));
     const diaSemana = fechaChile.getDay(); // 0 domingo, 1 lunes... 6 sábado
     
     const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
     
-    console.log(`🇨🇱 Hora Chile: ${diasSemana[diaSemana]} ${hora}:${minutos.toString().padStart(2, '0')}`);
+    console.log(`🇨🇱 Hora Chile: ${diasSemana[diaSemana]} ${hora}:${minutos.toString().padStart(2,'0')}`);
     
-    function sumar80Minutos() {
-        return new Date(fechaChile.getTime() + 80 * 60000);
+    function sumar80Minutos(fecha) {
+        return new Date(fecha.getTime() + 80 * 60000);
     }
 
-    // REGLA 1: Lunes a Viernes de 9:00 a 15:40
+    // REGLA 1: Lunes a Viernes de 9:00 a 15:40 (hora Chile)
     if (diaSemana >= 1 && diaSemana <= 5) {
         if (hora >= 9 && (hora < 15 || (hora === 15 && minutos <= 40))) {
-            const fechaEstimado = sumar80Minutos();
+            const fechaEstimado = new Date(fechaChile.getTime() + 80 * 60000);
             const horaEst = fechaEstimado.getHours().toString().padStart(2, '0');
             const minEst = fechaEstimado.getMinutes().toString().padStart(2, '0');
             return `Podemos gestionar tu servicio a partir de las ${horaEst}:${minEst} hrs. (hora Chile)`;
         }
     }
 
-    // REGLA 2: Lunes a Viernes de 00:00 a 8:59
+    // REGLA 2: Lunes a Viernes de 00:00 a 8:59 (hora Chile)
     if (diaSemana >= 1 && diaSemana <= 5 && hora < 9) {
         return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos gestionar tu envío para el día de hoy ${diasSemana[diaSemana]} durante la mañana.`;
     }
 
-    // REGLA 3: Lunes a Jueves de 15:41 a 23:59
-    if (diaSemana >= 1 && diaSemana <= 4) {
-        if (hora > 15 || (hora === 15 && minutos > 40)) {
-            return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podríamos agendar tu envío para el día de mañana ${diasSemana[diaSemana + 1]} durante la mañana.`;
-        }
+    // REGLA 3: Lunes a Jueves de 15:41 a 23:59 (hora Chile)
+    if (diaSemana >= 1 && diaSemana <= 4 && (hora > 15 || (hora === 15 && minutos > 40))) {
+        return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podríamos agendar tu envío para el día de mañana ${diasSemana[diaSemana + 1]} durante la mañana.`;
     }
 
-    // REGLA 4: Viernes después de 15:40
+    // REGLA 4: Viernes después de 15:40 (hora Chile)
     if (diaSemana === 5 && (hora > 15 || (hora === 15 && minutos > 40))) {
         return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
     }
@@ -740,6 +724,7 @@ function obtenerMensajeHoraEstimado() {
         return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
     }
 
+    // Fallback por si algo no está cubierto
     return `Gracias por cotizar en TuMotoExpress.cl. Te contactaremos a la brevedad.`;
 }
 
