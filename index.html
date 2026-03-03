@@ -1,249 +1,685 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const path = require("path");
-const fs = require("fs");
-const fetch = require("node-fetch");
-const { Resend } = require("resend");
-
-// ===== WEBPAY TRANSBANK =====
-const { WebpayPlus, Options, Environment } = require('transbank-sdk');
-
-// Configuración de Webpay (usar variables de entorno)
-const webpayOptions = new Options(
-  process.env.WEBPAY_CODIGO_COMERCIO || '597055555532',  // Código de comercio (pruebas por defecto)
-  process.env.WEBPAY_API_KEY || '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C',  // Api Key de pruebas
-  Environment.Integration  // Cambiar a Environment.Production cuando estés en vivo
-);
-
-const webpay = new WebpayPlus.Transaction(webpayOptions);
-// =============================
-
-// Verificar API key al inicio
-if (!process.env.RESEND_API_KEY) {
-  console.error("❌ ERROR: RESEND_API_KEY no está configurada en .env");
-  process.exit(1);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Cotizador TuMotoExpress.cl</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f5f6fa;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const app = express();
+/* LOGOS LATERALES (opacidad 1) */
+body::before {
+  content: "";
+  position: fixed;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 540px;
+  height: 540px;
+  background: url('logo.png') no-repeat center;
+  background-size: contain;
+  opacity: 1;
+  z-index: -1;
+  pointer-events: none;
+}
 
-app.use(cors());
-app.use(express.json());
+body::after {
+  content: "";
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  width: 540px;
+  height: 540px;
+  background: url('logo.png') no-repeat center;
+  background-size: contain;
+  opacity: 1;
+  z-index: -1;
+  pointer-events: none;
+}
 
-// Servir archivos estáticos
-app.use(express.static(__dirname));
-app.get("/", (req,res)=>res.sendFile(path.join(__dirname,"index.html")));
-app.get("/health",(req,res)=>res.json({status:"OK"}));
+.container {
+  background: white;
+  padding: 30px 20px;
+  border-radius: 20px;
+  width: 95%;
+  max-width: 480px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.2);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  margin: 0 20px;
+}
 
-// TARIFAS
-const TARIFAS_FILE = path.join(__dirname, "tarifas.json");
-function leerTarifas() {
-  try {
-    if (fs.existsSync(TARIFAS_FILE)) {
-      return JSON.parse(fs.readFileSync(TARIFAS_FILE, "utf8"));
-    }
-  } catch (err) {
-    console.error("Error leyendo tarifas.json:", err.message);
+h2 { font-size: 24px; margin: 0 0 15px 0; color: #111; }
+
+/* ----- NUEVO CUADRO DE CONDICIONES DE SERVICIO COMPACTO ----- */
+.condiciones-servicio {
+  background: #f8f9fa;
+  border-radius: 30px;
+  padding: 8px 12px 10px 12px;
+  margin: 0 auto 20px auto;
+  max-width: 380px;
+  display: inline-block;
+  border: 1px solid #eaeaea;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.condiciones-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.condiciones-header span {
+  font-size: 16px;
+}
+
+.condiciones-header h3 {
+  margin: 0;
+  color: #555;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* NUEVOS TEXTOS ENCIMA DE CADA ITEM */
+.condiciones-labels {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 2px;
+  padding: 0 5px;
+}
+
+.label-item {
+  font-size: 0.65rem;
+  color: #777;
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  text-align: center;
+  flex: 1;
+}
+
+.condiciones-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.condicion-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: white;
+  padding: 4px 10px;
+  border-radius: 40px;
+  border: 1px solid #f0f0f0;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.condicion-icon {
+  font-size: 14px;
+}
+
+.condicion-texto {
+  color: #444;
+  font-weight: 400;
+}
+
+.condicion-texto strong {
+  color: #ff4500;
+  font-weight: 600;
+  margin: 0 2px;
+}
+
+.condicion-mini {
+  font-size: 0.7rem;
+  color: #888;
+  margin-left: 2px;
+  font-weight: normal;
+}
+
+/* Responsive para el cuadro */
+@media screen and (max-width: 480px) {
+  .condiciones-servicio {
+    width: 100%;
+    padding: 8px 10px 10px 10px;
   }
-  return { 
-    tarifa_base: 6000, 
-    km_adicional_6_10: 1000, 
-    km_adicional_10_mas: 850, 
-    cupones: {
-      "BIENVENIDA10": 10,
-      "DESCUENTO20": 20
-    } 
+  
+  .condiciones-labels {
+    padding: 0 2px;
+  }
+  
+  .label-item {
+    font-size: 0.6rem;
+  }
+  
+  .condiciones-grid {
+    gap: 4px;
+  }
+  
+  .condicion-item {
+    padding: 3px 8px;
+    font-size: 0.75rem;
+  }
+  
+  .condicion-icon {
+    font-size: 12px;
+  }
+}
+/* ------------------------------------------------- */
+
+input { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #ddd; font-size: 15px; transition: all 0.2s; box-sizing: border-box; }
+input:focus { border-color: #111; box-shadow: 0 0 8px rgba(0,0,0,0.1); outline: none; }
+
+small { display: block; margin-bottom: 8px; color: #666; font-size: 13px; }
+
+button { width: 100%; padding: 14px; margin-top: 8px; border-radius: 12px; border: none; font-size: 15px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+button:hover { opacity: 0.9; transform: translateY(-1px); }
+button:active { transform: translateY(0); }
+
+.btn-cotizar { background: #111; color: white; }
+.btn-agregar { background: #4a4a4a; color: white; margin-top: 5px; font-size: 13px; padding: 10px; }
+.btn-whatsapp { background: #25D366; color: white; display: none; margin-top: 15px; }
+.btn-correo { background: #1a73e8; color: white; display: none; margin-top: 15px; }
+.btn-pagar { background: #ff4500; color: white; display: none; margin-top: 15px; }
+
+.resultado {
+  margin-top: 20px;
+  background: #f2f2f2;
+  padding: 18px;
+  border-radius: 14px;
+  font-size: 15px;
+  display: none;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+/* SECCIÓN DE PRECIOS CON LOGO MUCHO MÁS FUERTE (OPACIDAD 1 Y SIN ATENUAR) */
+.precios-section {
+  position: relative;
+  padding: 0;
+  background: #ffffff;
+  border-radius: 12px;
+  margin: 15px 0;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+  min-height: 200px;
+  background-image: url('logo.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 150px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.precios-content {
+  background: rgba(255, 255, 255, 0.7);
+  width: 90%;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 15px auto;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.precio-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed #ddd;
+  font-size: 14px;
+}
+
+.precio-item:last-child {
+  border-bottom: none;
+}
+
+.precio-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
+  font-weight: bold;
+  color: #ff4500;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 2px solid #ff4500;
+}
+
+.spinner {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #111;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+  display: none;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Estilos para destinos adicionales */
+.destino-adicional {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  background: #f8f9fa;
+  padding: 8px;
+  border-radius: 8px;
+  border-left: 3px solid #ff4500;
+}
+
+.destino-adicional input {
+  flex: 1;
+  margin: 0;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.btn-eliminar {
+  width: auto;
+  padding: 8px 12px;
+  margin: 0;
+  background: #dc3545;
+  color: white;
+  font-size: 13px;
+}
+
+/* Estilo para el resumen de destinos */
+.destinos-lista {
+  margin: 10px 0 15px 0;
+  padding-left: 20px;
+}
+
+.destinos-lista li {
+  margin: 5px 0;
+  color: #333;
+  font-size: 14px;
+}
+
+.tramo-resumen {
+  background: #f9f9f9;
+  padding: 10px;
+  margin: 8px 0;
+  border-left: 4px solid #ff4500;
+  border-radius: 8px;
+}
+
+.tramo-resumen strong {
+  color: #333;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.tramo-detalle {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #666;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+
+.tramo-detalle span {
+  background: #f0f0f0;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.resumen-total {
+  background: #e8f4fd;
+  padding: 10px;
+  border-radius: 8px;
+  margin: 12px 0;
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.codigo-cotizacion {
+  background: #333;
+  color: white;
+  padding: 6px;
+  border-radius: 6px;
+  text-align: center;
+  margin: 8px 0;
+  font-family: monospace;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+/* RESPONSIVE */
+@media screen and (max-width: 600px) {
+  .container { padding: 20px 15px; }
+  h2 { font-size: 22px; margin-bottom: 10px; }
+  .destino-adicional { flex-direction: column; }
+  .btn-eliminar { width: 100%; }
+  .precios-section {
+    background-size: 120px auto;
+    min-height: 180px;
+  }
+  .precios-content {
+    width: 85%;
+    padding: 12px;
+  }
+}
+
+/* ===== ESTILOS PARA MODAL DE WEBPAY (SOLO BOTÓN CERRAR) ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9998;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-contenido {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  z-index: 9999;
+  max-width: 350px;
+  width: 90%;
+  text-align: center;
+  animation: slideUp 0.3s ease;
+}
+
+.modal-icono {
+  font-size: 60px;
+  margin-bottom: 15px;
+}
+
+.modal-titulo {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.modal-mensaje {
+  color: #666;
+  margin-bottom: 25px;
+  line-height: 1.5;
+  font-size: 15px;
+}
+
+.modal-btn-cerrar {
+  background: #ff4500;
+  color: white;
+  padding: 12px 25px;
+  border-radius: 50px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto;
+  display: block;
+}
+
+.modal-btn-cerrar:hover {
+  background: #ff5722;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(255,69,0,0.2);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -30%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.btn-pagar {
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<!-- MODAL WEBPAY (OCULTO INICIALMENTE) - SOLO BOTÓN CERRAR -->
+<div id="webpayModal" class="modal-contenido">
+  <div class="modal-icono">🔧</div>
+  <div class="modal-titulo">WebPay próximamente</div>
+  <div class="modal-mensaje">
+    El sistema de pagos con tarjeta estará disponible pronto.
+  </div>
+  <button onclick="cerrarModalWebPay()" class="modal-btn-cerrar">✖ Cerrar</button>
+</div>
+
+<div id="modalOverlay" class="modal-overlay"></div>
+
+<div class="container">
+  <h2>🚀 TuMotoExpress.cl</h2>
+
+  <!-- NUEVO CUADRO DE CONDICIONES DE SERVICIO COMPACTO Y CENTRADO -->
+  <div class="condiciones-servicio">
+    <div class="condiciones-header">
+      <span>📋</span>
+      <h3>Condiciones de servicio</h3>
+    </div>
+    
+    <!-- NUEVOS TEXTOS ENCIMA DE CADA ÍTEM (con mayúscula inicial) -->
+    <div class="condiciones-labels">
+      <span class="label-item">Medida máxima</span>
+      <span class="label-item">Peso máximo</span>
+      <span class="label-item">Tiempo de espera</span>
+    </div>
+    
+    <div class="condiciones-grid">
+      <!-- Medida máxima -->
+      <div class="condicion-item">
+        <span class="condicion-icon">📏</span>
+        <span class="condicion-texto"><strong>30x30x30</strong><span class="condicion-mini">cm</span></span>
+      </div>
+      <!-- Peso máximo -->
+      <div class="condicion-item">
+        <span class="condicion-icon">⚖️</span>
+        <span class="condicion-texto"><strong>3</strong><span class="condicion-mini">kilos</span></span>
+      </div>
+      <!-- Minuto adicional -->
+      <div class="condicion-item">
+        <span class="condicion-icon">⏱️</span>
+        <span class="condicion-texto"><strong>$200</strong><span class="condicion-mini">/min</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dirección de origen -->
+  <input type="text" id="inicio" placeholder="Dirección de origen (ej: Av. Providencia 123, Providencia)">
+  
+  <!-- Contenedor para múltiples destinos -->
+  <div id="destinosContainer">
+    <div class="destino-adicional" id="destino-1">
+      <input type="text" class="destino-input" placeholder="Dirección de destino 1 (ej: Amunátegui 852, Santiago Centro)">
+    </div>
+  </div>
+  
+  <!-- Botón para agregar más destinos -->
+  <button class="btn-agregar" onclick="agregarDestino()">➕ Agregar otro destino</button>
+  
+  <input type="text" id="codigoCupon" placeholder="Cupón (opcional)">
+  <small>Incluye comuna para mayor precisión</small>
+
+  <button class="btn-cotizar" onclick="cotizar()">Cotizar</button>
+
+  <div class="spinner" id="spinner"></div>
+  <div id="resultado" class="resultado"></div>
+
+  <!-- CAMPOS CLIENTE -->
+  <div id="camposCliente" style="display:none;">
+    <input type="text" id="nombreCliente" placeholder="Nombre completo">
+    <input type="email" id="correoCliente" placeholder="Correo electrónico">
+    <input type="tel" id="telefonoCliente" placeholder="Teléfono (ej: 912345678)">
+    
+    <button id="btnSolicitarServicio" class="btn-whatsapp">📱 Solicitar servicio</button>
+    <button id="btnEnviarCorreo" class="btn-correo">📧 Enviar cotización por correo</button>
+    <button id="btnPagar" class="btn-pagar">💳 Pagar con WebPay</button>
+  </div>
+
+</div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7ExvZ0pJBjs37LHwbOcWrUqpxg_V78mk&libraries=places&language=es" defer></script>
+
+<script>
+let contadorDestinos = 1;
+
+// Función para mostrar modal de WebPay
+function mostrarModalWebPay() {
+  document.getElementById('modalOverlay').style.display = 'block';
+  document.getElementById('webpayModal').style.display = 'block';
+}
+
+// Función para cerrar modal
+function cerrarModalWebPay() {
+  document.getElementById('modalOverlay').style.display = 'none';
+  document.getElementById('webpayModal').style.display = 'none';
+}
+
+// ===== FUNCIÓN INIT AUTOCOMPLETE CORREGIDA =====
+function initAutocomplete() {
+  const options = { 
+    types: ["address"], 
+    componentRestrictions: { country: "cl" }, 
+    fields: ["formatted_address", "address_components", "geometry"] 
   };
-}
-
-let { tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones } = leerTarifas();
-let porcentajeAjuste = 0;
-
-// ============================================
-// ALMACENAMIENTO TEMPORAL DE COTIZACIONES (MEMORIA RAM)
-// ============================================
-const cotizacionesTemp = {};
-
-// Limpieza automática cada 5 minutos
-setInterval(() => {
-  const ahora = Date.now();
-  let eliminadas = 0;
   
-  for (const [codigo, data] of Object.entries(cotizacionesTemp)) {
-    if (ahora - data.timestamp > 30 * 60 * 1000) { // 30 minutos
-      delete cotizacionesTemp[codigo];
-      eliminadas++;
+  // Para el origen
+  const inicioInput = document.getElementById("inicio");
+  const inicioAutocomplete = new google.maps.places.Autocomplete(inicioInput, options);
+  
+  inicioAutocomplete.addListener('place_changed', function() {
+    const place = inicioAutocomplete.getPlace();
+    if (place.formatted_address) {
+      inicioInput.value = place.formatted_address;
     }
-  }
+  });
   
-  if (eliminadas > 0) {
-    console.log(`🧹 Limpieza: ${eliminadas} cotizaciones expiradas`);
-  }
-}, 5 * 60 * 1000);
-
-// FUNCIÓN PARA CALCULAR DISTANCIA Y TIEMPO (siempre la ruta más corta)
-async function calcularDistanciaYTiempo(origen, destino) {
-  if (!process.env.GOOGLE_MAPS_BACKEND_KEY) {
-    console.error("❌ ERROR: GOOGLE_MAPS_BACKEND_KEY no está configurada");
-    return { km: 8.5, minutos: 30 };
-  }
-  
-  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origen)}&destination=${encodeURIComponent(destino)}&region=CL&mode=driving&alternatives=true&key=${process.env.GOOGLE_MAPS_BACKEND_KEY}`;
-  
-  try {
-    console.log(`🔍 Calculando ruta de: "${origen}" a "${destino}"`);
-    const resp = await fetch(url);
-    const data = await resp.json();
+  // Para cada destino
+  document.querySelectorAll('.destino-input').forEach(input => {
+    const autocomplete = new google.maps.places.Autocomplete(input, options);
     
-    if (data.status !== "OK") {
-      console.error("❌ Google Directions API error:", data.error_message || data.status);
-      return { km: 8.5, minutos: 30 };
-    }
-    
-    // Buscar la ruta con la distancia MÁS CORTA
-    if (data.routes && data.routes.length > 0) {
-      let rutaMasCorta = data.routes[0];
-      let distanciaMinima = rutaMasCorta.legs?.[0]?.distance?.value || Infinity;
-      let tiempoMinimo = rutaMasCorta.legs?.[0]?.duration?.value || 0;
-      
-      // Si hay múltiples rutas, encontrar la de menor distancia
-      if (data.routes.length > 1) {
-        for (let i = 1; i < data.routes.length; i++) {
-          const distanciaActual = data.routes[i].legs?.[0]?.distance?.value || Infinity;
-          if (distanciaActual < distanciaMinima) {
-            distanciaMinima = distanciaActual;
-            tiempoMinimo = data.routes[i].legs?.[0]?.duration?.value || 0;
-          }
-        }
+    autocomplete.addListener('place_changed', function() {
+      const place = autocomplete.getPlace();
+      if (place.formatted_address) {
+        input.value = place.formatted_address;
       }
-      
-      const km = distanciaMinima / 1000;
-      const minutos = Math.round(tiempoMinimo / 60);
-      
-      console.log(`✅ Ruta encontrada: ${km.toFixed(2)} km, ${minutos} min`);
-      return { km, minutos };
+    });
+  });
+}
+
+// ===== FUNCIÓN AGREGAR DESTINO CORREGIDA =====
+function agregarDestino() {
+  contadorDestinos++;
+  
+  const container = document.getElementById('destinosContainer');
+  const nuevoDestino = document.createElement('div');
+  nuevoDestino.className = 'destino-adicional';
+  nuevoDestino.id = `destino-${contadorDestinos}`;
+  
+  nuevoDestino.innerHTML = `
+    <input type="text" class="destino-input" placeholder="Dirección de destino ${contadorDestinos} (ej: Amunátegui 852, Santiago Centro)">
+    <button class="btn-eliminar" onclick="eliminarDestino(${contadorDestinos})">✖</button>
+  `;
+  
+  container.appendChild(nuevoDestino);
+  
+  const options = { 
+    types: ["address"], 
+    componentRestrictions: { country: "cl" }, 
+    fields: ["formatted_address", "address_components", "geometry"] 
+  };
+  
+  const autocomplete = new google.maps.places.Autocomplete(nuevoDestino.querySelector('input'), options);
+  
+  autocomplete.addListener('place_changed', function() {
+    const place = autocomplete.getPlace();
+    if (place.formatted_address) {
+      nuevoDestino.querySelector('input').value = place.formatted_address;
     }
-    
-    return { km: 8.5, minutos: 30 };
-  } catch (err) {
-    console.error("❌ Error en Google Directions API:", err.message);
-    return { km: 8.5, minutos: 30 };
+  });
+}
+
+function eliminarDestino(id) {
+  const elemento = document.getElementById(`destino-${id}`);
+  if (elemento && document.querySelectorAll('.destino-adicional').length > 1) {
+    elemento.remove();
+    reenumerarDestinos();
+  } else {
+    alert('Debe haber al menos un destino');
   }
 }
 
-// 🔴 CALCULA TRAMOS SECUENCIALES (inicio → destino1 → destino2 → destino3)
-async function calcularTramosSecuenciales(origen, destinos) {
-  if (!process.env.GOOGLE_MAPS_BACKEND_KEY || destinos.length === 0) {
-    return [];
-  }
+function reenumerarDestinos() {
+  const destinos = document.querySelectorAll('.destino-adicional');
+  destinos.forEach((destino, index) => {
+    const input = destino.querySelector('.destino-input');
+    const nuevoNumero = index + 1;
+    input.placeholder = `Dirección de destino ${nuevoNumero} (ej: Amunátegui 852, Santiago Centro)`;
+    destino.id = `destino-${nuevoNumero}`;
+    
+    const btnEliminar = destino.querySelector('.btn-eliminar');
+    btnEliminar.setAttribute('onclick', `eliminarDestino(${nuevoNumero})`);
+  });
   
-  try {
-    console.log("🔄 Calculando tramos secuenciales");
-    console.log(`📍 Origen: ${origen}`);
-    console.log(`📍 Destinos: ${destinos.map((d, i) => `Destino ${i+1}: ${d}`).join(" → ")}`);
-    
-    const resultados = [];
-    let puntoAnterior = origen;
-    let distanciaTotal = 0;
-    let tiempoTotal = 0;
-    
-    // Calcular cada tramo desde el punto anterior
-    for (let i = 0; i < destinos.length; i++) {
-      console.log(`📍 Tramo ${i + 1}: ${puntoAnterior} → ${destinos[i]} (Destino ${i+1})`);
-      
-      const { km, minutos } = await calcularDistanciaYTiempo(puntoAnterior, destinos[i]);
-      
-      // Calcular precio de ESTE TRAMO usando tu fórmula
-      const precioTramo = calcularPrecioTramo(km);
-      
-      resultados.push({
-        numero: i + 1,
-        desde: puntoAnterior,
-        direccion: destinos[i],
-        distancia_km: km,
-        tiempo_minutos: minutos,
-        precio: precioTramo
-      });
-      
-      distanciaTotal += km;
-      tiempoTotal += minutos;
-      
-      // Actualizar puntoAnterior para el siguiente tramo
-      puntoAnterior = destinos[i];
+  contadorDestinos = destinos.length;
+}
+
+function obtenerTodosLosDestinos() {
+  const destinos = [];
+  document.querySelectorAll('.destino-input').forEach(input => {
+    if (input.value.trim()) {
+      destinos.push(input.value.trim());
     }
-    
-    return {
-      tramos: resultados,
-      distancia_total_km: distanciaTotal,
-      tiempo_total_minutos: tiempoTotal
-    };
-  } catch (err) {
-    console.error("❌ Error calculando tramos secuenciales:", err);
-    return {
-      tramos: destinos.map((destino, index) => ({
-        numero: index + 1,
-        desde: index === 0 ? origen : destinos[index - 1],
-        direccion: destino,
-        distancia_km: 8.5,
-        tiempo_minutos: 30,
-        precio: calcularPrecioTramo(8.5)
-      })),
-      distancia_total_km: 8.5 * destinos.length,
-      tiempo_total_minutos: 30 * destinos.length
-    };
-  }
+  });
+  return destinos;
 }
 
-// CALCULA PRECIO DE UN TRAMO INDIVIDUAL - CORREGIDA
-function calcularPrecioTramo(distancia_km) {
-  // Para tramos de hasta 6 km: tarifa fija
-  if (distancia_km <= 6) {
-    return tarifa_base;
-  } 
-  // Para tramos entre 6.01 y 10 km: tarifa base + km adicionales
-  else if (distancia_km <= 10) {
-    // Ejemplo: 8 km = $6000 + (2 km × $1000) = $8000
-    const kmAdicionales = distancia_km - 6;
-    return Math.round(tarifa_base + (kmAdicionales * km_adicional_6_10));
-  } 
-  // Para tramos mayores a 10 km: precio por km
-  else {
-    // Ejemplo: 12 km = 12 × $850 = $10200
-    return Math.round(distancia_km * km_adicional_10_mas);
-  }
-}
-
-// CALCULAR PRECIO TOTAL (suma de todos los tramos)
-function calcularPrecioTotal(tramos, codigo_cupon = "") {
-  // Sumar precio de todos los tramos
-  const neto = tramos.reduce((sum, tramo) => sum + tramo.precio, 0);
-  
-  let descuentoValor = 0, descuentoTexto = "";
-  const cuponUpper = codigo_cupon.toUpperCase();
-  
-  if (cuponUpper && cupones && cupones[cuponUpper]) {
-    const porcentaje = cupones[cuponUpper];
-    descuentoValor = Math.round(neto * (porcentaje / 100));
-    descuentoTexto = `Descuento ${cuponUpper} ${porcentaje}%`;
-    console.log(`🎟️ Cupón aplicado: ${cuponUpper}, descuento: $${descuentoValor}`);
-  }
-  
-  const netoConDescuento = neto - descuentoValor;
-  const iva = Math.round(netoConDescuento * 0.19);
-  const total = netoConDescuento + iva;
-  
-  return { neto, descuentoValor, descuentoTexto, iva, total, netoConDescuento };
-}
-
-// ============================================
-// FUNCIÓN DE HORARIO UNIFICADA (CON HORA DE CHILE)
-// ============================================
+// FUNCIÓN DE HORARIO ACTUALIZADA - CON HORA DE CHILE
 function obtenerMensajeHoraEstimado() {
-    // Crear fecha con hora de Chile
     const ahora = new Date();
     
-    // Opciones para obtener hora en Chile
     const options = {
         timeZone: 'America/Santiago',
         year: 'numeric',
@@ -254,65 +690,52 @@ function obtenerMensajeHoraEstimado() {
         hour12: false
     };
     
-    // Obtener componentes de fecha/hora en Chile
     const formatter = new Intl.DateTimeFormat('es-CL', options);
     const parts = formatter.formatToParts(ahora);
     
-    // Extraer valores
-    let dia = 0, hora = 0, minutos = 0, mes = 0, anio = 0;
+    let dia = 0, hora = 0, minutos = 0;
     parts.forEach(part => {
         if (part.type === 'day') dia = parseInt(part.value);
-        if (part.type === 'month') mes = parseInt(part.value);
-        if (part.type === 'year') anio = parseInt(part.value);
         if (part.type === 'hour') hora = parseInt(part.value);
         if (part.type === 'minute') minutos = parseInt(part.value);
     });
     
-    // Crear objeto Date con la fecha/hora chilena para cálculos
-    const fechaChile = new Date(anio, mes - 1, dia, hora, minutos);
-    const diaSemana = fechaChile.getDay(); // 0 domingo, 1 lunes... 6 sábado
+    const fechaChile = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Santiago' }));
+    const diaSemana = fechaChile.getDay();
     
     const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
     
-    console.log(`🇨🇱 Hora Chile: ${diasSemana[diaSemana]} ${hora}:${minutos.toString().padStart(2, '0')}`);
+    console.log(`🇨🇱 Hora Chile: ${diasSemana[diaSemana]} ${hora}:${minutos.toString().padStart(2,'0')}`);
     
-    function sumar80Minutos() {
-        return new Date(fechaChile.getTime() + 80 * 60000);
+    function sumar80Minutos(fecha) {
+        return new Date(fecha.getTime() + 80 * 60000);
     }
 
-    // REGLA 1: Lunes a Viernes de 9:00 a 15:40
     if (diaSemana >= 1 && diaSemana <= 5) {
         if (hora >= 9 && (hora < 15 || (hora === 15 && minutos <= 40))) {
-            const fechaEstimado = sumar80Minutos();
+            const fechaEstimado = new Date(fechaChile.getTime() + 80 * 60000);
             const horaEst = fechaEstimado.getHours().toString().padStart(2, '0');
             const minEst = fechaEstimado.getMinutes().toString().padStart(2, '0');
             return `Podemos gestionar tu servicio a partir de las ${horaEst}:${minEst} hrs. (hora Chile)`;
         }
     }
 
-    // REGLA 2: Lunes a Viernes de 00:00 a 8:59
     if (diaSemana >= 1 && diaSemana <= 5 && hora < 9) {
         return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos gestionar tu envío para el día de hoy ${diasSemana[diaSemana]} durante la mañana.`;
     }
 
-    // REGLA 3: Lunes a Jueves de 15:41 a 23:59
-    if (diaSemana >= 1 && diaSemana <= 4) {
-        if (hora > 15 || (hora === 15 && minutos > 40)) {
-            return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podríamos agendar tu envío para el día de mañana ${diasSemana[diaSemana + 1]} durante la mañana.`;
-        }
+    if (diaSemana >= 1 && diaSemana <= 4 && (hora > 15 || (hora === 15 && minutos > 40))) {
+        return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podríamos agendar tu envío para el día de mañana ${diasSemana[diaSemana + 1]} durante la mañana.`;
     }
 
-    // REGLA 4: Viernes después de 15:40
     if (diaSemana === 5 && (hora > 15 || (hora === 15 && minutos > 40))) {
         return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
     }
 
-    // REGLA 5: Sábado todo el día
     if (diaSemana === 6) {
         return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
     }
 
-    // REGLA 6: Domingo todo el día
     if (diaSemana === 0) {
         return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
     }
@@ -320,340 +743,232 @@ function obtenerMensajeHoraEstimado() {
     return `Gracias por cotizar en TuMotoExpress.cl. Te contactaremos a la brevedad.`;
 }
 
-// FUNCIÓN PARA GENERAR CÓDIGO ALFANUMÉRICO
-function generarCodigoCotizacion() {
-  const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let codigo = '';
-  for (let i = 0; i < 8; i++) {
-    codigo += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
-  }
-  return codigo;
-}
-
-// 🔴 FUNCIÓN PARA ENVIAR CORREOS
-async function enviarCorreos(cliente, cotizacion) {
-  console.log("📧 Iniciando envío de correos...");
+async function cotizar() {
+  const inicio = document.getElementById("inicio").value;
+  const destinos = obtenerTodosLosDestinos();
+  const codigo_cupon = document.getElementById("codigoCupon").value.trim().toUpperCase();
   
-  if (!cliente?.correo) {
-    console.error("❌ No hay correo del cliente");
-    return false;
+  if (!inicio) { 
+    alert("❌ Completa la dirección de origen"); 
+    return; 
+  }
+  
+  if (destinos.length === 0) { 
+    alert("❌ Agrega al menos un destino"); 
+    return; 
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(cliente.correo)) {
-    console.error("❌ Email del cliente no válido:", cliente.correo);
-    return false;
-  }
+  const spinner = document.getElementById("spinner"); 
+  spinner.style.display = "block";
 
   try {
-    const templatePath = path.join(__dirname, "correotemplate.html");
-    let htmlTemplate = "";
+    const response = await fetch("/cotizar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        inicio, 
+        destinos, 
+        cupon: codigo_cupon,
+        nombre: document.getElementById("nombreCliente").value,
+        correo: document.getElementById("correoCliente").value,
+        telefono: document.getElementById("telefonoCliente").value
+      })
+    });
     
-    if (fs.existsSync(templatePath)) {
-      htmlTemplate = fs.readFileSync(templatePath, "utf8");
-      console.log("✅ Template de correo cargado");
-    } else {
-      console.error("❌ No se encuentra correotemplate.html");
-      return false;
+    const data = await response.json();
+    spinner.style.display = "none";
+    
+    if (data.error) { 
+      alert("❌ " + data.error); 
+      return; 
     }
 
-    const codigoCotizacion = cotizacion.codigoCotizacion;
-    console.log("🔑 Código de cotización generado:", codigoCotizacion);
-
-    const formatearNumero = (num) => {
-      if (!num && num !== 0) return "0";
-      return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    };
-
-    // GENERAR HTML PARA LOS TRAMOS
-    let tramosHtml = '';
-    cotizacion.tramos.forEach((tramo) => {
-      tramosHtml += `
-        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:10px 0;">
-          <tr>
-            <td style="background:#f9f9f9; border-radius:8px; padding:12px; border-left:4px solid #ff4500;">
-              <table width="100%" border="0" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="font-size:15px; font-weight:bold; color:#333; padding-bottom:8px;">
-                    🚚 Tramo ${tramo.numero}: ${tramo.desde} → ${tramo.direccion}
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <table border="0" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="background:#f0f0f0; padding:4px 12px; border-radius:20px; font-size:13px; margin-right:10px; white-space:nowrap;">
-                          📏 ${tramo.distancia_km.toFixed(2)} km
-                        </td>
-                        <td style="background:#f0f0f0; padding:4px 12px; border-radius:20px; font-size:13px; margin-right:10px; white-space:nowrap;">
-                          ⏱️ ${tramo.tiempo_minutos} min
-                        </td>
-                        <td style="background:#f0f0f0; padding:4px 12px; border-radius:20px; font-size:13px; white-space:nowrap;">
-                          💰 $${formatearNumero(tramo.precio)}
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
+    const resultadoDiv = document.getElementById("resultado");
+    resultadoDiv.style.display = "block";
+    
+    let html = '';
+    if (data.codigoCotizacion) {
+      html += `<div class="codigo-cotizacion">🔑 Código: ${data.codigoCotizacion}</div>`;
+    }
+    
+    html += `<strong>📍 Origen:</strong> ${data.origen}<br><br>`;
+    
+    html += `<strong>📋 Destinos ingresados (${destinos.length}):</strong><br>`;
+    html += `<ol class="destinos-lista" style="margin:5px 0 15px 20px;">`;
+    destinos.forEach((destino, index) => {
+      html += `<li><strong>Destino ${index + 1}:</strong> ${destino}</li>`;
+    });
+    html += `</ol>`;
+    
+    html += `<strong>🛵 Tramos del recorrido:</strong><br>`;
+    
+    data.tramos.forEach((tramo, index) => {
+      html += `
+        <div class="tramo-resumen">
+          <strong>🚚 Tramo ${index + 1}: ${tramo.desde} → ${tramo.direccion}</strong>
+          <div class="tramo-detalle">
+            <span>📏 ${tramo.distancia_km.toFixed(2)} km</span>
+            <span>⏱️ ${tramo.tiempo_minutos} min</span>
+            <span>💰 $${tramo.precio.toLocaleString('es-CL')}</span>
+          </div>
+        </div>
       `;
     });
-
-    // Generar link de WhatsApp
-    let mensajeTramos = '';
-    cotizacion.tramos.forEach((tramo, index) => {
-      mensajeTramos += `\nTramo ${index + 1}: ${tramo.desde} → ${tramo.direccion} (${tramo.distancia_km.toFixed(2)} km - $${formatearNumero(tramo.precio)})`;
-    });
     
-    const mensajeWhatsApp = `Hola, confirmo el servicio de TuMotoExpress.cl\nCódigo: ${codigoCotizacion}\nOrigen: ${cotizacion.origen}${mensajeTramos}\n\nTotal: $${formatearNumero(cotizacion.total)}`;
-    const whatsappLink = `https://wa.me/56942325524?text=${encodeURIComponent(mensajeWhatsApp)}`;
-
-    // Procesar template
-    let htmlCliente = htmlTemplate
-      .replace(/{{codigoCotizacion}}/g, codigoCotizacion)
-      .replace(/{{nombre}}/g, cliente.nombre || "Cliente")
-      .replace(/{{origen}}/g, cotizacion.origen)
-      .replace(/{{tramosHtml}}/g, tramosHtml)
-      .replace(/{{distancia}}/g, cotizacion.distancia_total_km.toFixed(2))
-      .replace(/{{tiempoTotal}}/g, cotizacion.tiempo_total_minutos)
-      .replace(/{{neto}}/g, formatearNumero(cotizacion.neto))
-      .replace(/{{iva}}/g, formatearNumero(cotizacion.iva))
-      .replace(/{{total}}/g, formatearNumero(cotizacion.total))
-      .replace(/{{mensajeHorario}}/g, obtenerMensajeHoraEstimado())
-      .replace(/{{whatsappLink}}/g, whatsappLink);
-
-    // Procesar descuento condicional
-    if (cotizacion.descuentoValor && cotizacion.descuentoValor > 0) {
-      htmlCliente = htmlCliente
-        .replace(/{{#if descuento}}/g, '')
-        .replace(/{{\/if}}/g, '')
-        .replace(/{{descuento}}/g, formatearNumero(cotizacion.descuentoValor));
-    } else {
-      htmlCliente = htmlCliente.replace(/\{\{#if descuento\}\}[\s\S]*?\{\{\/if\}\}/g, '');
+    html += `
+      <div class="resumen-total">
+        <div>📏 Distancia total: ${data.distancia_total_km.toFixed(2)} km</div>
+        <div>⏱️ Tiempo total: ${data.tiempo_total_minutos} min</div>
+      </div>
+    `;
+    
+    // SECCIÓN DE PRECIOS CON LOGO
+    html += `
+      <div class="precios-section">
+        <div class="precios-content">
+          <strong>💰 Detalle de precios:</strong>
+          <div class="precio-item">
+            <span>Neto:</span>
+            <span>$${data.neto.toLocaleString('es-CL')}</span>
+          </div>
+    `;
+    
+    if (data.descuentoValor && data.descuentoValor > 0) {
+      html += `
+          <div class="precio-item" style="color:#27ae60;">
+            <span>🎟️ Descuento:</span>
+            <span>-$${data.descuentoValor.toLocaleString('es-CL')}</span>
+          </div>
+          <div class="precio-item">
+            <span>Neto con descuento:</span>
+            <span>$${data.netoConDescuento.toLocaleString('es-CL')}</span>
+          </div>
+      `;
     }
-
-    const fromEmail = "contacto@tumotoexpress.cl";
     
-    // Enviar al cliente
-    await resend.emails.send({
-      from: fromEmail,
-      to: cliente.correo,
-      subject: `🚀 Cotización #${codigoCotizacion} - TuMotoExpress.cl - $${formatearNumero(cotizacion.total)}`,
-      html: htmlCliente
-    });
+    html += `
+          <div class="precio-item">
+            <span>IVA (19%):</span>
+            <span>$${data.iva.toLocaleString('es-CL')}</span>
+          </div>
+          <div class="precio-total">
+            <span>TOTAL:</span>
+            <span>$${data.total.toLocaleString('es-CL')}</span>
+          </div>
+        </div>
+      </div>
+      <br>
+      <em>${obtenerMensajeHoraEstimado()}</em>
+    `;
+    
+    resultadoDiv.innerHTML = html;
 
-    // Enviar copia
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    await resend.emails.send({
-      from: fromEmail,
-      to: ["contacto@tumotoexpress.cl"],
-      subject: `📊 COPIA #${codigoCotizacion}: ${cliente.nombre || "cliente"} - $${formatearNumero(cotizacion.total)}`,
-      html: htmlCliente
-    });
+    document.getElementById("camposCliente").style.display = "block";
 
-    return true;
-  } catch (err) {
-    console.error("❌ Error enviando correos:", err.message);
-    return false;
+    window.ultimaCotizacion = data;
+    window.datosViaje = { inicio, destinos, cupon: codigo_cupon };
+
+    const telefono = "56942325524";
+    let mensajeTramos = '';
+    data.tramos.forEach((tramo, index) => {
+      mensajeTramos += `\nTramo ${index + 1}: ${tramo.desde} → ${tramo.direccion} (${tramo.distancia_km.toFixed(2)} km - $${tramo.precio.toLocaleString('es-CL')})`;
+    });
+    
+    const mensaje = encodeURIComponent(`Hola, solicito el servicio de TuMotoExpress.cl\nCódigo: ${data.codigoCotizacion || 'N/A'}\nOrigen: ${data.origen}${mensajeTramos}\n\nTotal: $${data.total.toLocaleString('es-CL')}\n\n${obtenerMensajeHoraEstimado()}`);
+    
+    const btnSolicitar = document.getElementById("btnSolicitarServicio");
+    btnSolicitar.style.display = "block";
+    btnSolicitar.onclick = () => window.open(`https://wa.me/${telefono}?text=${mensaje}`, "_blank");
+
+    const btnCorreo = document.getElementById("btnEnviarCorreo");
+    btnCorreo.style.display = "block";
+    btnCorreo.onclick = async () => {
+      const nombre = document.getElementById("nombreCliente").value;
+      const correo = document.getElementById("correoCliente").value;
+      const telefonoC = document.getElementById("telefonoCliente").value;
+      
+      if (!nombre || !correo || !telefonoC) {
+        alert("❌ Completa todos los datos del cliente");
+        return;
+      }
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(correo)) {
+        alert("❌ Ingresa un correo válido");
+        return;
+      }
+      
+      const telefonoRegex = /^[0-9]{9}$/;
+      if (!telefonoRegex.test(telefonoC)) {
+        alert("❌ Ingresa un teléfono válido de 9 dígitos");
+        return;
+      }
+      
+      try {
+        const response = await fetch("/enviar-correo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            nombre, 
+            correo, 
+            telefono: telefonoC,
+            cotizacion: window.ultimaCotizacion
+          })
+        });
+        
+        const result = await response.json();
+        if (result.error) {
+          alert("❌ Error: " + result.error);
+        } else {
+          alert("✅ ¡Correo enviado correctamente!");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("❌ Error al enviar el correo");
+      }
+    };
+
+    const btnPagar = document.getElementById("btnPagar");
+    btnPagar.style.display = "block";
+    btnPagar.onclick = function() {
+      if (!window.ultimaCotizacion || !window.ultimaCotizacion.codigoCotizacion) {
+        alert("❌ Primero debes realizar una cotización");
+        return;
+      }
+      
+      const nombre = document.getElementById("nombreCliente").value;
+      const correo = document.getElementById("correoCliente").value;
+      const telefono = document.getElementById("telefonoCliente").value;
+      
+      if (!nombre || !correo || !telefono) {
+        alert("❌ Completa todos los datos del cliente");
+        return;
+      }
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(correo)) {
+        alert("❌ Ingresa un correo válido");
+        return;
+      }
+      
+      const telefonoRegex = /^[0-9]{9}$/;
+      if (!telefonoRegex.test(telefono)) {
+        alert("❌ Ingresa un teléfono válido de 9 dígitos");
+        return;
+      }
+      
+      mostrarModalWebPay();
+    };
+
+  } catch (err) { 
+    spinner.style.display = "none"; 
+    console.error(err); 
+    alert("❌ Error al cotizar: " + err.message); 
   }
 }
 
-// ============================================
-// ENDPOINT COTIZAR
-// ============================================
-app.post("/cotizar", async (req, res) => {
-  console.log("📩 POST /cotizar recibido");
-  console.log("📩 Body:", req.body);
-  
-  try {
-    const { inicio, destinos, cupon, nombre, correo, telefono } = req.body;
-
-    if (!inicio) {
-      return res.status(400).json({ error: "Falta la dirección de origen" });
-    }
-
-    if (!destinos || !Array.isArray(destinos) || destinos.length === 0) {
-      return res.status(400).json({ error: "Se requiere al menos un destino" });
-    }
-
-    console.log(`📍 Procesando: ${inicio} → ${destinos.map((d,i)=> `Destino ${i+1}: ${d}`).join(" → ")}`);
-
-    // CALCULAR TRAMOS SECUENCIALES
-    const { tramos, distancia_total_km, tiempo_total_minutos } = await calcularTramosSecuenciales(inicio, destinos);
-    
-    // CALCULAR PRECIO TOTAL
-    const precios = calcularPrecioTotal(tramos, cupon || "");
-    
-    // Generar código de cotización
-    const codigoCotizacion = generarCodigoCotizacion();
-    
-    // Preparar respuesta
-    const respuesta = {
-      codigoCotizacion,
-      origen: inicio,
-      tramos: tramos,
-      distancia_total_km,
-      tiempo_total_minutos,
-      ...precios
-    };
-
-    // GUARDAR EN MEMORIA TEMPORAL
-    cotizacionesTemp[codigoCotizacion] = {
-      monto: precios.total,
-      timestamp: Date.now()
-    };
-
-    console.log("✅ Cotización calculada:");
-    console.log(`🔑 Código: ${codigoCotizacion}`);
-    console.log(`📍 Origen: ${inicio}`);
-    tramos.forEach(t => {
-      console.log(`   Tramo ${t.numero} (Destino ${t.numero}): ${t.desde} → ${t.direccion} = $${t.precio} (${t.distancia_km.toFixed(2)} km)`);
-    });
-    console.log(`💰 Total: $${precios.total}`);
-
-    res.json(respuesta);
-
-    // Enviar correos si hay datos de cliente
-    if (nombre && correo) {
-      console.log("📧 Datos de cliente completos, enviando correos...");
-      enviarCorreos({ nombre, correo, telefono }, respuesta)
-        .then(success => {
-          if (success) console.log("✅ Correos enviados");
-          else console.log("❌ Fallo al enviar correos");
-        })
-        .catch(err => console.error("❌ Error:", err));
-    }
-
-  } catch (error) {
-    console.error("❌ Error en /cotizar:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
-
-// ============================================
-// ENDPOINT PARA INICIAR PAGO WEBPAY
-// ============================================
-app.post("/iniciar-pago-webpay", async (req, res) => {
-  try {
-    const { buyOrder, amount, sessionId } = req.body;
-    
-    console.log("💳 Iniciando pago WebPay:", { buyOrder, amount, sessionId });
-    
-    // 🔒 SEGURIDAD: Verificar que la cotización existe
-    const cotizacionGuardada = cotizacionesTemp[buyOrder];
-    
-    if (!cotizacionGuardada) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Cotización no válida o expirada" 
-      });
-    }
-    
-    // USAR EL MONTO REAL GUARDADO
-    const montoReal = cotizacionGuardada.monto;
-    
-    console.log(`🔒 Seguridad: Cliente envió $${amount}, pero real es $${montoReal}`);
-    
-    // Determinar la URL base
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://tumotoexpress.cl'  // CAMBIA POR TU DOMINIO REAL
-      : `http://localhost:${PORT}`;
-    
-    const returnUrl = `${baseUrl}/confirmar-pago-webpay`;
-    
-    // Crear la transacción en Transbank
-    const response = await webpay.create(
-      buyOrder,
-      sessionId,
-      montoReal,
-      returnUrl
-    );
-    
-    console.log("✅ Transacción WebPay creada:", response);
-    
-    res.json({
-      success: true,
-      token: response.token,
-      url: response.url
-    });
-    
-  } catch (error) {
-    console.error('❌ Error en WebPay:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
-  }
-});
-
-// ============================================
-// ENDPOINT PARA CONFIRMAR PAGO WEBPAY
-// ============================================
-app.get('/confirmar-pago-webpay', async (req, res) => {
-  try {
-    const { token_ws, TBK_TOKEN } = req.query;
-    
-    console.log("📩 Confirmación de pago WebPay recibida:", { token_ws, TBK_TOKEN });
-    
-    if (TBK_TOKEN) {
-      return res.redirect('/pago-cancelado.html');
-    }
-    
-    if (!token_ws) {
-      return res.status(400).send('No se recibió token de pago');
-    }
-    
-    const response = await webpay.commit(token_ws);
-    
-    console.log('📊 Respuesta de confirmación WebPay:', response);
-    
-    if (response.status === 'AUTHORIZED') {
-      console.log(`✅ Pago exitoso para orden: ${response.buy_order}, monto: $${response.amount}`);
-      delete cotizacionesTemp[response.buy_order];
-      res.redirect(`/pago-exitoso.html?orden=${response.buy_order}`);
-    } else {
-      console.log(`❌ Pago fallido: ${response.status}`);
-      res.redirect('/pago-fallido.html');
-    }
-    
-  } catch (error) {
-    console.error('❌ Error confirmando pago:', error);
-    res.status(500).send('Error procesando el pago');
-  }
-});
-
-// ENDPOINT PARA ENVIAR CORREO
-app.post("/enviar-correo", async (req, res) => {
-  try {
-    const { nombre, correo, telefono, cotizacion } = req.body;
-    
-    if (!nombre || !correo || !telefono) {
-      return res.status(400).json({ error: "Faltan datos del cliente" });
-    }
-    
-    const result = await enviarCorreos({ nombre, correo, telefono }, cotizacion);
-    
-    if (result) {
-      res.json({ success: true, message: "Correo enviado correctamente" });
-    } else {
-      res.status(500).json({ error: "Error al enviar el correo" });
-    }
-  } catch (err) {
-    console.error("❌ Error:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// SERVER
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log("=".repeat(50));
-  console.log(`✅ Servidor corriendo en puerto ${PORT}`);
-  console.log(`📍 Google Maps Key: ${process.env.GOOGLE_MAPS_BACKEND_KEY ? "✅" : "❌"}`);
-  console.log(`📧 Resend API Key: ${process.env.RESEND_API_KEY ? "✅" : "❌"}`);
-  console.log(`💳 WebPay: ${process.env.WEBPAY_CODIGO_COMERCIO ? "✅ Usando tus datos" : "⚠️ Usando pruebas"}`);
-  console.log("=".repeat(50));
-});
+document.getElementById('modalOverlay').addEventListener('click', cerrarModalWebPay);
+window.onload = initAutocomplete;
+</script>
+</body>
+</html>

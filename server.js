@@ -132,7 +132,8 @@ async function calcularDistanciaYTiempo(origen, destino) {
   }
 }
 
-// 🔴 CALCULA TRAMOS SECUENCIALES (inicio → destino1 → destino2 → destino3)
+// 🔴 CALCULA TRAMOS SECUENCIALES (inicio → destino1 → destino2 → destino3 → destino4...)
+// 🔴 VERSIÓN CORREGIDA - Cada tramo se calcula desde el punto anterior
 async function calcularTramosSecuenciales(origen, destinos) {
   if (!process.env.GOOGLE_MAPS_BACKEND_KEY || destinos.length === 0) {
     return [];
@@ -148,13 +149,55 @@ async function calcularTramosSecuenciales(origen, destinos) {
     let distanciaTotal = 0;
     let tiempoTotal = 0;
     
-    // Calcular cada tramo desde el punto anterior
+    // Calcular CADA tramo desde el punto anterior (NO desde el inicio)
     for (let i = 0; i < destinos.length; i++) {
-      console.log(`📍 Tramo ${i + 1}: ${puntoAnterior} → ${destinos[i]} (Destino ${i+1})`);
+      const destinoActual = destinos[i];
       
-      const { km, minutos } = await calcularDistanciaYTiempo(puntoAnterior, destinos[i]);
+      console.log(`📍 Tramo ${i + 1}: "${puntoAnterior}" → "${destinoActual}"`);
       
-      // Calcular precio de ESTE TRAMO usando tu fórmula
+      // Calcular distancia y tiempo ENTRE el punto anterior y el destino actual
+      const { km, minutos } = await calcularDistanciaYTiempo(puntoAnterior, destinoActual);
+      
+      // Calcular precio de ESTE TRAMO específico
+      const precioTramo = calcularPrecioTramo(km);
+      
+      resultados.push({
+        numero: i + 1,
+        desde: puntoAnterior,
+        direccion: destinoActual,
+        distancia_km: km,
+        tiempo_minutos: minutos,
+        precio: precioTramo
+      });
+      
+      distanciaTotal += km;
+      tiempoTotal += minutos;
+      
+      // ACTUALIZAR puntoAnterior para el siguiente tramo (¡esto es CRÍTICO!)
+      puntoAnterior = destinoActual;
+      
+      console.log(`   ✅ Tramo ${i+1}: ${km.toFixed(2)} km, $${precioTramo}`);
+    }
+    
+    console.log(`✅ Totales: ${distanciaTotal.toFixed(2)} km, ${tiempoTotal} min`);
+    
+    return {
+      tramos: resultados,
+      distancia_total_km: distanciaTotal,
+      tiempo_total_minutos: tiempoTotal
+    };
+  } catch (err) {
+    console.error("❌ Error calculando tramos secuenciales:", err);
+    
+    // Fallback: aún así calcular tramos desde el punto anterior
+    const resultados = [];
+    let puntoAnterior = origen;
+    let distanciaTotal = 0;
+    let tiempoTotal = 0;
+    
+    for (let i = 0; i < destinos.length; i++) {
+      const km = 8.5; // valor por defecto
+      const minutos = 30;
       const precioTramo = calcularPrecioTramo(km);
       
       resultados.push({
@@ -168,9 +211,7 @@ async function calcularTramosSecuenciales(origen, destinos) {
       
       distanciaTotal += km;
       tiempoTotal += minutos;
-      
-      // Actualizar puntoAnterior para el siguiente tramo
-      puntoAnterior = destinos[i];
+      puntoAnterior = destinos[i]; // ¡ACTUALIZAR también en el fallback!
     }
     
     return {
@@ -178,24 +219,10 @@ async function calcularTramosSecuenciales(origen, destinos) {
       distancia_total_km: distanciaTotal,
       tiempo_total_minutos: tiempoTotal
     };
-  } catch (err) {
-    console.error("❌ Error calculando tramos secuenciales:", err);
-    return {
-      tramos: destinos.map((destino, index) => ({
-        numero: index + 1,
-        desde: index === 0 ? origen : destinos[index - 1],
-        direccion: destino,
-        distancia_km: 8.5,
-        tiempo_minutos: 30,
-        precio: calcularPrecioTramo(8.5)
-      })),
-      distancia_total_km: 8.5 * destinos.length,
-      tiempo_total_minutos: 30 * destinos.length
-    };
   }
 }
 
-// CALCULA PRECIO DE UN TRAMO INDIVIDUAL - CORREGIDA
+// CALCULA PRECIO DE UN TRAMO INDIVIDUAL
 function calcularPrecioTramo(distancia_km) {
   // Para tramos de hasta 6 km: tarifa fija
   if (distancia_km <= 6) {
@@ -510,7 +537,7 @@ app.post("/cotizar", async (req, res) => {
     console.log(`🔑 Código: ${codigoCotizacion}`);
     console.log(`📍 Origen: ${inicio}`);
     tramos.forEach(t => {
-      console.log(`   Tramo ${t.numero} (Destino ${t.numero}): ${t.desde} → ${t.direccion} = $${t.precio} (${t.distancia_km.toFixed(2)} km)`);
+      console.log(`   Tramo ${t.numero}: ${t.desde} → ${t.direccion} = $${t.precio} (${t.distancia_km.toFixed(2)} km)`);
     });
     console.log(`💰 Total: $${precios.total}`);
 
