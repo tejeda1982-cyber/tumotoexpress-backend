@@ -194,33 +194,71 @@ function calcularPrecioTotal(tramos, codigo_cupon = "") {
   return { neto, descuentoValor, descuentoTexto, iva, total, netoConDescuento };
 }
 
-// FUNCIÓN PARA OBTENER MENSAJE DE HORARIO
 function obtenerMensajeHoraEstimado() {
+
   const ahora = new Date();
-  const dia = ahora.getDay();
+  const dia = ahora.getDay(); // 0 = domingo, 6 = sábado
   const hora = ahora.getHours();
   const minutos = ahora.getMinutes();
-  const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
-  
+
+  const diasSemana = [
+    "domingo",
+    "lunes",
+    "martes",
+    "miércoles",
+    "jueves",
+    "viernes",
+    "sábado"
+  ];
+
   function sumar80Minutos(fecha) {
     return new Date(fecha.getTime() + 80 * 60000);
   }
 
-  if (dia >= 1 && dia <= 4 && hora < 9) {
-    return `Gracias por cotizar. Estamos fuera de horario, pero podemos gestionar tu servicio para hoy ${diasSemana[dia]} durante la mañana.`;
+  function obtenerMananaNombre() {
+    const manana = new Date(ahora);
+    manana.setDate(ahora.getDate() + 1);
+    return diasSemana[manana.getDay()];
   }
-  if (dia >= 1 && dia <= 5) {
-    if (hora >= 9 && (hora < 15 || (hora === 15 && minutos <= 40))) {
-      const fechaEstimado = sumar80Minutos(ahora);
-      return `Podemos gestionar tu servicio a partir de las ${fechaEstimado.getHours().toString().padStart(2, '0')}:${fechaEstimado.getMinutes().toString().padStart(2, '0')} hrs.`;
-    }
-  }
-  if (dia >= 1 && dia <= 4 && hora > 15) {
-    return `Fuera de horario, podemos gestionar tu servicio para mañana ${diasSemana[dia + 1]} durante la mañana.`;
-  }
-  return `Podemos gestionar tu servicio el lunes durante la mañana.`;
-}
 
+  // Lunes a Viernes antes de las 09:00
+  if (dia >= 1 && dia <= 5 && hora < 9) {
+    return `Gracias por cotizar en tumotorexpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos gestionar tu envío para hoy ${diasSemana[dia]} durante la mañana.`;
+  }
+
+  // Lunes a Viernes entre 09:00 y 15:40
+  if (
+    dia >= 1 &&
+    dia <= 5 &&
+    hora >= 9 &&
+    (
+      hora < 15 ||
+      (hora === 15 && minutos <= 40)
+    )
+  ) {
+    const fechaEstimado = sumar80Minutos(ahora);
+    const horaEst = fechaEstimado.getHours().toString().padStart(2, "0");
+    const minEst = fechaEstimado.getMinutes().toString().padStart(2, "0");
+
+    return `Gracias por cotizar en tumotorexpress.cl. Podemos realizar tu envío a partir de las ${horaEst}:${minEst} hrs.`;
+  }
+
+  // Lunes a Jueves desde 15:41 en adelante
+  if (
+    dia >= 1 &&
+    dia <= 4 &&
+    (
+      hora > 15 ||
+      (hora === 15 && minutos > 40)
+    )
+  ) {
+    const nombreManana = obtenerMananaNombre();
+    return `Gracias por cotizar en tumotorexpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos agendar tu envío para el día de mañana, ${nombreManana} durante la mañana.`;
+  }
+
+  // Viernes después de 15:40, sábado y domingo
+  return `Gracias por cotizar en tumotorexpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos agendar tu envío para el día lunes durante la mañana.`;
+}
 // FUNCIÓN PARA GENERAR CÓDIGO ALFANUMÉRICO
 function generarCodigoCotizacion() {
   const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
