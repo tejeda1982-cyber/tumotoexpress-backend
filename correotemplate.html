@@ -121,12 +121,12 @@
                                 </tr>
                             </table>
                             
-                            <!-- TARJETA DE PRECIOS - UNIFORME CON DETALLES DEL VIAJE -->
+                            <!-- TARJETA DE PRECIOS -->
                             <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#f9f9f9" style="background-color:#f9f9f9; border-radius:14px; border:1px solid #e0e0e0; margin:16px 0;">
                                 <tr>
                                     <td style="padding:16px;">
                                         
-                                        <!-- TÍTULO CON LÍNEA NARANJA (IGUAL QUE DETALLES DEL VIAJE) -->
+                                        <!-- Título -->
                                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td style="border-bottom:2px solid #ff4500; padding-bottom:10px; margin-bottom:12px;">
@@ -135,47 +135,33 @@
                                             </tr>
                                         </table>
                                         
-                                        <!-- FRASE TuMotoExpress.cl CENTRADA (16px BOLD, ROJO) -->
-                                        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                        <!-- Tabla de precios -->
+                                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:12px 0;">
                                             <tr>
-                                                <td align="center" style="padding:0 0 8px 0;">
-                                                    <span style="font-size:16px; color:#ff0000; font-weight:bold;">TuMotoExpress.cl</span>
-                                                </td>
+                                                <td style="padding:10px 3px; border-bottom:1px dashed #dddddd;">Neto:</td>
+                                                <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{neto}}</td>
                                             </tr>
-                                        </table>
-                                        
-                                        <!-- NETO -->
-                                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0;">
+                                            
+                                            <!-- DESCUENTO CONDICIONAL -->
+                                            {{#if descuento}}
                                             <tr>
-                                                <td style="padding:5px 3px 5px 3px; border-bottom:1px dashed #dddddd;">Neto:</td>
-                                                <td style="padding:5px 3px 5px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{neto}}</td>
+                                                <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; color:#27ae60;">🎟️ Descuento aplicado:</td>
+                                                <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600; color:#27ae60;">-${{descuento}}</td>
                                             </tr>
-                                        </table>
-                                        
-                                        <!-- DESCUENTO (SI EXISTE) -->
-                                        {{#if descuento}}
-                                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0;">
+                                            {{/if}}
+                                            
                                             <tr>
-                                                <td style="padding:5px 3px 5px 3px; border-bottom:1px dashed #dddddd; color:#27ae60;">🎟️ Descuento aplicado:</td>
-                                                <td style="padding:5px 3px 5px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600; color:#27ae60;">-${{descuento}}</td>
-                                            </tr>
-                                        </table>
-                                        {{/if}}
-                                        
-                                        <!-- IVA -->
-                                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0;">
-                                            <tr>
-                                                <td style="padding:5px 3px 5px 3px; border-bottom:1px dashed #dddddd;">IVA (19%):</td>
-                                                <td style="padding:5px 3px 5px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{iva}}</td>
+                                                <td style="padding:10px 3px; border-bottom:1px dashed #dddddd;">IVA (19%):</td>
+                                                <td style="padding:10px 3px; border-bottom:1px dashed #dddddd; text-align:right; font-weight:600;">${{iva}}</td>
                                             </tr>
                                         </table>
                                         
                                         <!-- TOTAL -->
-                                        <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background-color:#000000; border-radius:14px; margin:15px 0 5px;">
+                                        <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background-color:#000000; border-radius:14px; margin:20px 0 12px;">
                                             <tr>
-                                                <td style="padding:14px 12px; text-align:center;">
-                                                    <div style="font-size:14px; color:#ffffff; opacity:0.9; margin-bottom:3px;">TOTAL DEL SERVICIO</div>
-                                                    <div style="font-size:36px; font-weight:bold; color:#ff4500; line-height:1.2;">${{total}}</div>
+                                                <td style="padding:16px 12px; text-align:center;">
+                                                    <div style="font-size:14px; color:#ffffff; opacity:0.9; margin-bottom:5px;">TOTAL DEL SERVICIO</div>
+                                                    <div style="font-size:38px; font-weight:bold; color:#ff4500; line-height:1.2;">${{total}}</div>
                                                 </td>
                                             </tr>
                                         </table>
@@ -188,13 +174,17 @@
                             <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#e8f4fd" style="background-color:#e8f4fd; border-radius:14px; border-left:3px solid #2196F3; margin:20px 0;">
                                 <tr>
                                     <td style="padding:16px;">
+                                        
+                                        <!-- Título horario -->
                                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td width="40" style="font-size:22px;">⏰</td>
                                                 <td><strong style="font-size:16px;">Horario estimado</strong></td>
                                             </tr>
                                         </table>
+                                        
                                         <p style="margin:10px 0 0 0; font-size:14px; color:#000000;">{{mensajeHorario}}</p>
+                                        
                                     </td>
                                 </tr>
                             </table>
@@ -226,6 +216,8 @@
                             <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#f9f9f9" style="background-color:#f9f9f9; border-top:1px solid #e0e0e0; margin-top:20px;">
                                 <tr>
                                     <td style="padding:20px 15px; text-align:center;">
+                                        
+                                        <!-- Contacto -->
                                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td style="padding:6px 0;">
@@ -238,6 +230,8 @@
                                                 </td>
                                             </tr>
                                         </table>
+                                        
+                                        <!-- Badge -->
                                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td align="center" style="padding:12px 0;">
@@ -251,14 +245,19 @@
                                                 </td>
                                             </tr>
                                         </table>
+                                        
+                                        <!-- Notas -->
                                         <p style="font-size:12px; color:#888888; margin:15px 0 0 0; padding-top:15px; border-top:1px solid #eeeeee;">
                                             * Servicio sujeto a disponibilidad<br>
                                             * Horario estimado puede variar<br>
                                             * Incluye mensajería y paquetes pequeños
                                         </p>
+                                        
+                                        <!-- Copyright -->
                                         <p style="margin-top:15px; font-size:11px; color:#aaaaaa;">
                                             © 2026 TuMotoExpress.cl
                                         </p>
+                                        
                                     </td>
                                 </tr>
                             </table>

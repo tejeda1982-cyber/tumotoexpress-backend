@@ -384,111 +384,9 @@ button:active { transform: translateY(0); }
     padding: 12px;
   }
 }
-
-/* ===== ESTILOS PARA MODAL DE WEBPAY (SOLO BOTÓN CERRAR) ===== */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 9998;
-  animation: fadeIn 0.3s ease;
-}
-
-.modal-contenido {
-  display: none;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: white;
-  padding: 30px;
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  z-index: 9999;
-  max-width: 350px;
-  width: 90%;
-  text-align: center;
-  animation: slideUp 0.3s ease;
-}
-
-.modal-icono {
-  font-size: 60px;
-  margin-bottom: 15px;
-}
-
-.modal-titulo {
-  font-size: 24px;
-  color: #333;
-  margin-bottom: 10px;
-  font-weight: 600;
-}
-
-.modal-mensaje {
-  color: #666;
-  margin-bottom: 25px;
-  line-height: 1.5;
-  font-size: 15px;
-}
-
-.modal-btn-cerrar {
-  background: #ff4500;
-  color: white;
-  padding: 12px 25px;
-  border-radius: 50px;
-  border: none;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s;
-  width: 100%;
-  max-width: 200px;
-  margin: 0 auto;
-  display: block;
-}
-
-.modal-btn-cerrar:hover {
-  background: #ff5722;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(255,69,0,0.2);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -30%);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%);
-  }
-}
-
-.btn-pagar {
-  cursor: pointer;
-}
 </style>
 </head>
 <body>
-
-<!-- MODAL WEBPAY (OCULTO INICIALMENTE) - SOLO BOTÓN CERRAR -->
-<div id="webpayModal" class="modal-contenido">
-  <div class="modal-icono">🔧</div>
-  <div class="modal-titulo">WebPay próximamente</div>
-  <div class="modal-mensaje">
-    El sistema de pagos con tarjeta estará disponible pronto.
-  </div>
-  <button onclick="cerrarModalWebPay()" class="modal-btn-cerrar">✖ Cerrar</button>
-</div>
-
-<div id="modalOverlay" class="modal-overlay"></div>
 
 <div class="container">
   <h2>🚀 TuMotoExpress.cl</h2>
@@ -565,18 +463,6 @@ button:active { transform: translateY(0); }
 <script>
 let contadorDestinos = 1;
 
-// Función para mostrar modal de WebPay
-function mostrarModalWebPay() {
-  document.getElementById('modalOverlay').style.display = 'block';
-  document.getElementById('webpayModal').style.display = 'block';
-}
-
-// Función para cerrar modal
-function cerrarModalWebPay() {
-  document.getElementById('modalOverlay').style.display = 'none';
-  document.getElementById('webpayModal').style.display = 'none';
-}
-
 function initAutocomplete() {
   const options = { 
     types: ["geocode", "establishment"], 
@@ -649,83 +535,32 @@ function obtenerTodosLosDestinos() {
   return destinos;
 }
 
-// FUNCIÓN DE HORARIO ACTUALIZADA - CON HORA DE CHILE (IGUAL QUE EN SERVER.JS)
 function obtenerMensajeHoraEstimado() {
-    // Crear fecha con hora de Chile
     const ahora = new Date();
-    
-    // Opciones para obtener hora en Chile
-    const options = {
-        timeZone: 'America/Santiago',
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: false
-    };
-    
-    // Obtener componentes de fecha/hora en Chile
-    const formatter = new Intl.DateTimeFormat('es-CL', options);
-    const parts = formatter.formatToParts(ahora);
-    
-    // Extraer valores
-    let dia = 0, hora = 0, minutos = 0;
-    parts.forEach(part => {
-        if (part.type === 'day') dia = parseInt(part.value);
-        if (part.type === 'hour') hora = parseInt(part.value);
-        if (part.type === 'minute') minutos = parseInt(part.value);
-    });
-    
-    // Obtener día de la semana en Chile
-    const fechaChile = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Santiago' }));
-    const diaSemana = fechaChile.getDay(); // 0 domingo, 1 lunes... 6 sábado
-    
+    const dia = ahora.getDay();
+    const hora = ahora.getHours();
+    const minutos = ahora.getMinutes();
     const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
     
-    console.log(`🇨🇱 Hora Chile: ${diasSemana[diaSemana]} ${hora}:${minutos.toString().padStart(2,'0')}`);
-    
-    function sumar80Minutos(fecha) {
-        return new Date(fecha.getTime() + 80 * 60000);
+    function sumar80Minutos(fecha) { 
+        return new Date(fecha.getTime() + 80 * 60000); 
     }
 
-    // REGLA 1: Lunes a Viernes de 9:00 a 15:40 (hora Chile)
-    if (diaSemana >= 1 && diaSemana <= 5) {
+    if (dia >= 1 && dia <= 4 && hora < 9) {
+        return `Gracias por cotizar. Estamos fuera de horario, pero podemos gestionar tu servicio para hoy ${diasSemana[dia]} durante la mañana.`;
+    }
+    if (dia >= 1 && dia <= 5) {
         if (hora >= 9 && (hora < 15 || (hora === 15 && minutos <= 40))) {
-            const fechaEstimado = new Date(fechaChile.getTime() + 80 * 60000);
-            const horaEst = fechaEstimado.getHours().toString().padStart(2, '0');
-            const minEst = fechaEstimado.getMinutes().toString().padStart(2, '0');
-            return `Podemos gestionar tu servicio a partir de las ${horaEst}:${minEst} hrs. (hora Chile)`;
+            const fechaEstimado = sumar80Minutos(ahora);
+            return `Podemos gestionar tu servicio a partir de las ${fechaEstimado.getHours().toString().padStart(2,'0')}:${fechaEstimado.getMinutes().toString().padStart(2,'0')} hrs.`;
         }
     }
-
-    // REGLA 2: Lunes a Viernes de 00:00 a 8:59 (hora Chile)
-    if (diaSemana >= 1 && diaSemana <= 5 && hora < 9) {
-        return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos gestionar tu envío para el día de hoy ${diasSemana[diaSemana]} durante la mañana.`;
+    if (dia >= 1 && dia <= 4 && hora > 15) {
+        const manana = new Date(ahora); 
+        manana.setDate(ahora.getDate() + 1);
+        return `Fuera de horario, podemos gestionar tu servicio para mañana ${diasSemana[manana.getDay()]} durante la mañana.`;
     }
-
-    // REGLA 3: Lunes a Jueves de 15:41 a 23:59 (hora Chile)
-    if (diaSemana >= 1 && diaSemana <= 4 && (hora > 15 || (hora === 15 && minutos > 40))) {
-        return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podríamos agendar tu envío para el día de mañana ${diasSemana[diaSemana + 1]} durante la mañana.`;
-    }
-
-    // REGLA 4: Viernes después de 15:40 (hora Chile)
-    if (diaSemana === 5 && (hora > 15 || (hora === 15 && minutos > 40))) {
-        return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
-    }
-
-    // REGLA 5: Sábado todo el día
-    if (diaSemana === 6) {
-        return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
-    }
-
-    // REGLA 6: Domingo todo el día
-    if (diaSemana === 0) {
-        return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
-    }
-
-    // Fallback por si algo no está cubierto
-    return `Gracias por cotizar en TuMotoExpress.cl. Te contactaremos a la brevedad.`;
+    return `Podemos gestionar tu servicio el lunes durante la mañana.`;
 }
 
 async function cotizar() {
@@ -750,14 +585,7 @@ async function cotizar() {
     const response = await fetch("/cotizar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        inicio, 
-        destinos, 
-        cupon: codigo_cupon,
-        nombre: document.getElementById("nombreCliente").value,
-        correo: document.getElementById("correoCliente").value,
-        telefono: document.getElementById("telefonoCliente").value
-      })
+      body: JSON.stringify({ inicio, destinos, cupon: codigo_cupon })
     });
     
     const data = await response.json();
@@ -913,45 +741,9 @@ async function cotizar() {
       }
     };
 
-    // ============================================
-    // BOTÓN PAGAR CON WEBPAY - SOLO MUESTRA MODAL
-    // ============================================
     const btnPagar = document.getElementById("btnPagar");
     btnPagar.style.display = "block";
-    btnPagar.onclick = function() {
-      // Verificar que hay una cotización
-      if (!window.ultimaCotizacion || !window.ultimaCotizacion.codigoCotizacion) {
-        alert("❌ Primero debes realizar una cotización");
-        return;
-      }
-      
-      // Verificar que los datos del cliente están completos
-      const nombre = document.getElementById("nombreCliente").value;
-      const correo = document.getElementById("correoCliente").value;
-      const telefono = document.getElementById("telefonoCliente").value;
-      
-      if (!nombre || !correo || !telefono) {
-        alert("❌ Completa todos los datos del cliente");
-        return;
-      }
-      
-      // Validar email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(correo)) {
-        alert("❌ Ingresa un correo válido");
-        return;
-      }
-      
-      // Validar teléfono
-      const telefonoRegex = /^[0-9]{9}$/;
-      if (!telefonoRegex.test(telefono)) {
-        alert("❌ Ingresa un teléfono válido de 9 dígitos");
-        return;
-      }
-      
-      // MOSTRAR MODAL EN LUGAR DE REDIRIGIR
-      mostrarModalWebPay();
-    };
+    btnPagar.onclick = () => alert("⏳ Integración WebPay próximamente");
 
   } catch (err) { 
     spinner.style.display = "none"; 
@@ -959,9 +751,6 @@ async function cotizar() {
     alert("❌ Error al cotizar: " + err.message); 
   }
 }
-
-// Cerrar modal si se hace clic en el overlay
-document.getElementById('modalOverlay').addEventListener('click', cerrarModalWebPay);
 
 window.onload = initAutocomplete;
 </script>

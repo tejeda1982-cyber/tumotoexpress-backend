@@ -6,19 +6,6 @@ const fs = require("fs");
 const fetch = require("node-fetch");
 const { Resend } = require("resend");
 
-// ===== WEBPAY TRANSBANK =====
-const { WebpayPlus, Options, Environment } = require('transbank-sdk');
-
-// Configuración de Webpay (usar variables de entorno)
-const webpayOptions = new Options(
-  process.env.WEBPAY_CODIGO_COMERCIO || '597055555532',  // Código de comercio (pruebas por defecto)
-  process.env.WEBPAY_API_KEY || '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C',  // Api Key de pruebas
-  Environment.Integration  // Cambiar a Environment.Production cuando estés en vivo
-);
-
-const webpay = new WebpayPlus.Transaction(webpayOptions);
-// =============================
-
 // Verificar API key al inicio
 if (!process.env.RESEND_API_KEY) {
   console.error("❌ ERROR: RESEND_API_KEY no está configurada en .env");
@@ -59,28 +46,6 @@ function leerTarifas() {
 
 let { tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones } = leerTarifas();
 let porcentajeAjuste = 0;
-
-// ============================================
-// ALMACENAMIENTO TEMPORAL DE COTIZACIONES (MEMORIA RAM)
-// ============================================
-const cotizacionesTemp = {};
-
-// Limpieza automática cada 5 minutos
-setInterval(() => {
-  const ahora = Date.now();
-  let eliminadas = 0;
-  
-  for (const [codigo, data] of Object.entries(cotizacionesTemp)) {
-    if (ahora - data.timestamp > 30 * 60 * 1000) { // 30 minutos
-      delete cotizacionesTemp[codigo];
-      eliminadas++;
-    }
-  }
-  
-  if (eliminadas > 0) {
-    console.log(`🧹 Limpieza: ${eliminadas} cotizaciones expiradas`);
-  }
-}, 5 * 60 * 1000);
 
 // FUNCIÓN PARA CALCULAR DISTANCIA Y TIEMPO (siempre la ruta más corta)
 async function calcularDistanciaYTiempo(origen, destino) {
@@ -228,80 +193,31 @@ function calcularPrecioTotal(tramos, codigo_cupon = "") {
   return { neto, descuentoValor, descuentoTexto, iva, total, netoConDescuento };
 }
 
-// FUNCIÓN PARA OBTENER MENSAJE DE HORARIO (CON HORA DE CHILE)
+// FUNCIÓN PARA OBTENER MENSAJE DE HORARIO
 function obtenerMensajeHoraEstimado() {
-  // Crear fecha con hora de Chile
   const ahora = new Date();
-  
-  // Obtener componentes de fecha/hora en Chile usando Intl
-  const options = {
-    timeZone: 'America/Santiago',
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    hour12: false
-  };
-  
-  const formatter = new Intl.DateTimeFormat('es-CL', options);
-  const parts = formatter.formatToParts(ahora);
-  
-  // Extraer valores
-  let dia = 0, hora = 0, minutos = 0;
-  parts.forEach(part => {
-    if (part.type === 'day') dia = parseInt(part.value);
-    if (part.type === 'hour') hora = parseInt(part.value);
-    if (part.type === 'minute') minutos = parseInt(part.value);
-  });
-  
-  // Obtener día de la semana en Chile
-  const fechaChile = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Santiago' }));
-  const diaSemana = fechaChile.getDay(); // 0 domingo, 1 lunes... 6 sábado
-  
+  const dia = ahora.getDay();
+  const hora = ahora.getHours();
+  const minutos = ahora.getMinutes();
   const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
   
   function sumar80Minutos(fecha) {
     return new Date(fecha.getTime() + 80 * 60000);
   }
 
-  // REGLA 1: Lunes a Viernes de 9:00 a 15:40 (hora Chile)
-  if (diaSemana >= 1 && diaSemana <= 5) {
+  if (dia >= 1 && dia <= 4 && hora < 9) {
+    return `Gracias por cotizar. Estamos fuera de horario, pero podemos gestionar tu servicio para hoy ${diasSemana[dia]} durante la mañana.`;
+  }
+  if (dia >= 1 && dia <= 5) {
     if (hora >= 9 && (hora < 15 || (hora === 15 && minutos <= 40))) {
-      const fechaEstimado = new Date(fechaChile.getTime() + 80 * 60000);
-      const horaEst = fechaEstimado.getHours().toString().padStart(2, '0');
-      const minEst = fechaEstimado.getMinutes().toString().padStart(2, '0');
-      return `Podemos gestionar tu servicio a partir de las ${horaEst}:${minEst} hrs. (hora Chile)`;
+      const fechaEstimado = sumar80Minutos(ahora);
+      return `Podemos gestionar tu servicio a partir de las ${fechaEstimado.getHours().toString().padStart(2, '0')}:${fechaEstimado.getMinutes().toString().padStart(2, '0')} hrs.`;
     }
   }
-
-  // REGLA 2: Lunes a Viernes de 00:00 a 8:59 (hora Chile)
-  if (diaSemana >= 1 && diaSemana <= 5 && hora < 9) {
-    return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos gestionar tu envío para el día de hoy ${diasSemana[diaSemana]} durante la mañana.`;
+  if (dia >= 1 && dia <= 4 && hora > 15) {
+    return `Fuera de horario, podemos gestionar tu servicio para mañana ${diasSemana[dia + 1]} durante la mañana.`;
   }
-
-  // REGLA 3: Lunes a Jueves de 15:41 a 23:59 (hora Chile)
-  if (diaSemana >= 1 && diaSemana <= 4 && (hora > 15 || (hora === 15 && minutos > 40))) {
-    return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podríamos agendar tu envío para el día de mañana ${diasSemana[diaSemana + 1]} durante la mañana.`;
-  }
-
-  // REGLA 4: Viernes después de 15:40 (hora Chile)
-  if (diaSemana === 5 && (hora > 15 || (hora === 15 && minutos > 40))) {
-    return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
-  }
-
-  // REGLA 5: Sábado todo el día
-  if (diaSemana === 6) {
-    return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
-  }
-
-  // REGLA 6: Domingo todo el día
-  if (diaSemana === 0) {
-    return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
-  }
-
-  // Fallback por si algo no está cubierto
-  return `Gracias por cotizar en TuMotoExpress.cl. Te contactaremos a la brevedad.`;
+  return `Podemos gestionar tu servicio el lunes durante la mañana.`;
 }
 
 // FUNCIÓN PARA GENERAR CÓDIGO ALFANUMÉRICO
@@ -314,7 +230,7 @@ function generarCodigoCotizacion() {
   return codigo;
 }
 
-// 🔴 FUNCIÓN PARA ENVIAR CORREOS
+// 🔴 FUNCIÓN PARA ENVIAR CORREOS - SOLO CAMBIÉ LA GENERACIÓN DE TRAMOSHTML
 async function enviarCorreos(cliente, cotizacion) {
   console.log("📧 Iniciando envío de correos...");
   
@@ -349,7 +265,7 @@ async function enviarCorreos(cliente, cotizacion) {
       return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     };
 
-    // GENERAR HTML PARA LOS TRAMOS
+    // 🔴 GENERAR HTML PARA LOS TRAMOS CON TABLAS (COMPATIBLE OUTLOOK)
     let tramosHtml = '';
     cotizacion.tramos.forEach((tramo) => {
       tramosHtml += `
@@ -445,9 +361,7 @@ async function enviarCorreos(cliente, cotizacion) {
   }
 }
 
-// ============================================
-// ENDPOINT COTIZAR
-// ============================================
+// ENDPOINT COTIZAR - MODIFICADO PARA TRAMOS SECUENCIALES
 app.post("/cotizar", async (req, res) => {
   console.log("📩 POST /cotizar recibido");
   console.log("📩 Body:", req.body);
@@ -468,15 +382,11 @@ app.post("/cotizar", async (req, res) => {
     // CALCULAR TRAMOS SECUENCIALES
     const { tramos, distancia_total_km, tiempo_total_minutos } = await calcularTramosSecuenciales(inicio, destinos);
     
-    // CALCULAR PRECIO TOTAL
+    // CALCULAR PRECIO TOTAL (suma de todos los tramos)
     const precios = calcularPrecioTotal(tramos, cupon || "");
-    
-    // Generar código de cotización
-    const codigoCotizacion = generarCodigoCotizacion();
     
     // Preparar respuesta
     const respuesta = {
-      codigoCotizacion,
       origen: inicio,
       tramos: tramos,
       distancia_total_km,
@@ -484,14 +394,7 @@ app.post("/cotizar", async (req, res) => {
       ...precios
     };
 
-    // GUARDAR EN MEMORIA TEMPORAL
-    cotizacionesTemp[codigoCotizacion] = {
-      monto: precios.total,
-      timestamp: Date.now()
-    };
-
     console.log("✅ Cotización calculada:");
-    console.log(`🔑 Código: ${codigoCotizacion}`);
     console.log(`📍 Origen: ${inicio}`);
     tramos.forEach(t => {
       console.log(`   Tramo ${t.numero} (Destino ${t.numero}): ${t.desde} → ${t.direccion} = $${t.precio} (${t.distancia_km.toFixed(2)} km)`);
@@ -514,98 +417,6 @@ app.post("/cotizar", async (req, res) => {
   } catch (error) {
     console.error("❌ Error en /cotizar:", error);
     res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
-
-// ============================================
-// ENDPOINT PARA INICIAR PAGO WEBPAY
-// ============================================
-app.post("/iniciar-pago-webpay", async (req, res) => {
-  try {
-    const { buyOrder, amount, sessionId } = req.body;
-    
-    console.log("💳 Iniciando pago WebPay:", { buyOrder, amount, sessionId });
-    
-    // 🔒 SEGURIDAD: Verificar que la cotización existe
-    const cotizacionGuardada = cotizacionesTemp[buyOrder];
-    
-    if (!cotizacionGuardada) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Cotización no válida o expirada" 
-      });
-    }
-    
-    // USAR EL MONTO REAL GUARDADO
-    const montoReal = cotizacionGuardada.monto;
-    
-    console.log(`🔒 Seguridad: Cliente envió $${amount}, pero real es $${montoReal}`);
-    
-    // Determinar la URL base
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://tumotoexpress.cl'  // CAMBIA POR TU DOMINIO REAL
-      : `http://localhost:${PORT}`;
-    
-    const returnUrl = `${baseUrl}/confirmar-pago-webpay`;
-    
-    // Crear la transacción en Transbank
-    const response = await webpay.create(
-      buyOrder,
-      sessionId,
-      montoReal,
-      returnUrl
-    );
-    
-    console.log("✅ Transacción WebPay creada:", response);
-    
-    res.json({
-      success: true,
-      token: response.token,
-      url: response.url
-    });
-    
-  } catch (error) {
-    console.error('❌ Error en WebPay:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
-  }
-});
-
-// ============================================
-// ENDPOINT PARA CONFIRMAR PAGO WEBPAY
-// ============================================
-app.get('/confirmar-pago-webpay', async (req, res) => {
-  try {
-    const { token_ws, TBK_TOKEN } = req.query;
-    
-    console.log("📩 Confirmación de pago WebPay recibida:", { token_ws, TBK_TOKEN });
-    
-    if (TBK_TOKEN) {
-      return res.redirect('/pago-cancelado.html');
-    }
-    
-    if (!token_ws) {
-      return res.status(400).send('No se recibió token de pago');
-    }
-    
-    const response = await webpay.commit(token_ws);
-    
-    console.log('📊 Respuesta de confirmación WebPay:', response);
-    
-    if (response.status === 'AUTHORIZED') {
-      console.log(`✅ Pago exitoso para orden: ${response.buy_order}, monto: $${response.amount}`);
-      delete cotizacionesTemp[response.buy_order];
-      res.redirect(`/pago-exitoso.html?orden=${response.buy_order}`);
-    } else {
-      console.log(`❌ Pago fallido: ${response.status}`);
-      res.redirect('/pago-fallido.html');
-    }
-    
-  } catch (error) {
-    console.error('❌ Error confirmando pago:', error);
-    res.status(500).send('Error procesando el pago');
   }
 });
 
@@ -638,6 +449,5 @@ app.listen(PORT, () => {
   console.log(`✅ Servidor corriendo en puerto ${PORT}`);
   console.log(`📍 Google Maps Key: ${process.env.GOOGLE_MAPS_BACKEND_KEY ? "✅" : "❌"}`);
   console.log(`📧 Resend API Key: ${process.env.RESEND_API_KEY ? "✅" : "❌"}`);
-  console.log(`💳 WebPay: ${process.env.WEBPAY_CODIGO_COMERCIO ? "✅ Usando tus datos" : "⚠️ Usando pruebas"}`);
   console.log("=".repeat(50));
 });
