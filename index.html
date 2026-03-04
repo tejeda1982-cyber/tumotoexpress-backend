@@ -687,6 +687,7 @@ async function cotizar() {
       mensajeTramos += `\nTramo ${index + 1}: ${tramo.desde} → ${tramo.direccion} (${tramo.distancia_km.toFixed(2)} km - $${tramo.precio.toLocaleString('es-CL')})`;
     });
     
+    // EL CÓDIGO DEL BACK-END SE INCLUYE EN EL MENSAJE DE WHATSAPP
     const mensaje = encodeURIComponent(`Hola, solicito el servicio de TuMotoExpress.cl\nCódigo: ${data.codigoCotizacion || 'N/A'}\nOrigen: ${data.origen}${mensajeTramos}\n\nTotal: $${data.total.toLocaleString('es-CL')}\n\n${obtenerMensajeHoraEstimado()}`);
     
     const btnSolicitar = document.getElementById("btnSolicitarServicio");
