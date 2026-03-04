@@ -231,7 +231,7 @@ function generarCodigoCotizacion() {
   return codigo;
 }
 
-// 🔴 FUNCIÓN PARA ENVIAR CORREOS - SOLO CAMBIÉ LA GENERACIÓN DE TRAMOSHTML
+// 🔴 FUNCIÓN PARA ENVIAR CORREOS - AHORA USA EL MISMO CÓDIGO DE LA COTIZACIÓN
 async function enviarCorreos(cliente, cotizacion) {
   console.log("📧 Iniciando envío de correos...");
   
@@ -258,8 +258,9 @@ async function enviarCorreos(cliente, cotizacion) {
       return false;
     }
 
-    const codigoCotizacion = generarCodigoCotizacion();
-    console.log("🔑 Código de cotización generado:", codigoCotizacion);
+    // 🔑 USAR EL CÓDIGO QUE YA VIENE DE LA COTIZACIÓN (NO GENERAR UNO NUEVO)
+    const codigoCotizacion = cotizacion.codigoCotizacion;
+    console.log("🔑 Usando código de cotización:", codigoCotizacion);
 
     const formatearNumero = (num) => {
       if (!num && num !== 0) return "0";
