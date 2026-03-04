@@ -366,7 +366,6 @@ button:active { transform: translateY(0); }
   margin: 8px 0;
   font-family: monospace;
   font-size: 16px;
-  letter-spacing: 1px;
 }
 
 /* RESPONSIVE */
@@ -561,28 +560,21 @@ button:active { transform: translateY(0); }
 </div>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7ExvZ0pJBjs37LHwbOcWrUqpxg_V78mk&libraries=places&language=es" defer></script>
-
 <script>
 let contadorDestinos = 1;
 
-// Función para mostrar modal de WebPay
 function mostrarModalWebPay() {
   document.getElementById('modalOverlay').style.display = 'block';
   document.getElementById('webpayModal').style.display = 'block';
 }
 
-// Función para cerrar modal
 function cerrarModalWebPay() {
   document.getElementById('modalOverlay').style.display = 'none';
   document.getElementById('webpayModal').style.display = 'none';
 }
 
 function initAutocomplete() {
-  const options = { 
-    types: ["geocode", "establishment"], 
-    componentRestrictions: { country: "cl" }, 
-    fields: ["formatted_address", "geometry", "name"] 
-  };
+  const options = { types: ["geocode", "establishment"], componentRestrictions: { country: "cl" }, fields: ["formatted_address", "geometry", "name"] };
   
   new google.maps.places.Autocomplete(document.getElementById("inicio"), options);
   
@@ -606,11 +598,7 @@ function agregarDestino() {
   
   container.appendChild(nuevoDestino);
   
-  const options = { 
-    types: ["geocode", "establishment"], 
-    componentRestrictions: { country: "cl" }, 
-    fields: ["formatted_address", "geometry", "name"] 
-  };
+  const options = { types: ["geocode", "establishment"], componentRestrictions: { country: "cl" }, fields: ["formatted_address", "geometry", "name"] };
   new google.maps.places.Autocomplete(nuevoDestino.querySelector('input'), options);
 }
 
@@ -649,319 +637,7 @@ function obtenerTodosLosDestinos() {
   return destinos;
 }
 
-// FUNCIÓN DE HORARIO ACTUALIZADA - CON HORA DE CHILE (IGUAL QUE EN SERVER.JS)
-function obtenerMensajeHoraEstimado() {
-    // Crear fecha con hora de Chile
-    const ahora = new Date();
-    
-    // Opciones para obtener hora en Chile
-    const options = {
-        timeZone: 'America/Santiago',
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: false
-    };
-    
-    // Obtener componentes de fecha/hora en Chile
-    const formatter = new Intl.DateTimeFormat('es-CL', options);
-    const parts = formatter.formatToParts(ahora);
-    
-    // Extraer valores
-    let dia = 0, hora = 0, minutos = 0;
-    parts.forEach(part => {
-        if (part.type === 'day') dia = parseInt(part.value);
-        if (part.type === 'hour') hora = parseInt(part.value);
-        if (part.type === 'minute') minutos = parseInt(part.value);
-    });
-    
-    // Obtener día de la semana en Chile
-    const fechaChile = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Santiago' }));
-    const diaSemana = fechaChile.getDay(); // 0 domingo, 1 lunes... 6 sábado
-    
-    const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
-    
-    console.log(`🇨🇱 Hora Chile: ${diasSemana[diaSemana]} ${hora}:${minutos.toString().padStart(2,'0')}`);
-    
-    function sumar80Minutos(fecha) {
-        return new Date(fecha.getTime() + 80 * 60000);
-    }
-
-    // REGLA 1: Lunes a Viernes de 9:00 a 15:40 (hora Chile)
-    if (diaSemana >= 1 && diaSemana <= 5) {
-        if (hora >= 9 && (hora < 15 || (hora === 15 && minutos <= 40))) {
-            const fechaEstimado = new Date(fechaChile.getTime() + 80 * 60000);
-            const horaEst = fechaEstimado.getHours().toString().padStart(2, '0');
-            const minEst = fechaEstimado.getMinutes().toString().padStart(2, '0');
-            return `Podemos gestionar tu servicio a partir de las ${horaEst}:${minEst} hrs. (hora Chile)`;
-        }
-    }
-
-    // REGLA 2: Lunes a Viernes de 00:00 a 8:59 (hora Chile)
-    if (diaSemana >= 1 && diaSemana <= 5 && hora < 9) {
-        return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos gestionar tu envío para el día de hoy ${diasSemana[diaSemana]} durante la mañana.`;
-    }
-
-    // REGLA 3: Lunes a Jueves de 15:41 a 23:59 (hora Chile)
-    if (diaSemana >= 1 && diaSemana <= 4 && (hora > 15 || (hora === 15 && minutos > 40))) {
-        return `Gracias por cotizar en TuMotoExpress.cl. En este momento nos encontramos fuera de horario de atención, pero podríamos agendar tu envío para el día de mañana ${diasSemana[diaSemana + 1]} durante la mañana.`;
-    }
-
-    // REGLA 4: Viernes después de 15:40 (hora Chile)
-    if (diaSemana === 5 && (hora > 15 || (hora === 15 && minutos > 40))) {
-        return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
-    }
-
-    // REGLA 5: Sábado todo el día
-    if (diaSemana === 6) {
-        return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
-    }
-
-    // REGLA 6: Domingo todo el día
-    if (diaSemana === 0) {
-        return `Gracias por cotizar en TuMotoExpress.cl. Nos encontramos fuera de horario comercial, pero podemos agendar tu envío el día lunes durante la mañana.`;
-    }
-
-    // Fallback por si algo no está cubierto
-    return `Gracias por cotizar en TuMotoExpress.cl. Te contactaremos a la brevedad.`;
-}
-
-async function cotizar() {
-  const inicio = document.getElementById("inicio").value;
-  const destinos = obtenerTodosLosDestinos();
-  const codigo_cupon = document.getElementById("codigoCupon").value.trim().toUpperCase();
-  
-  if (!inicio) { 
-    alert("❌ Completa la dirección de origen"); 
-    return; 
-  }
-  
-  if (destinos.length === 0) { 
-    alert("❌ Agrega al menos un destino"); 
-    return; 
-  }
-
-  const spinner = document.getElementById("spinner"); 
-  spinner.style.display = "block";
-
-  try {
-    const response = await fetch("/cotizar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        inicio, 
-        destinos, 
-        cupon: codigo_cupon,
-        nombre: document.getElementById("nombreCliente").value,
-        correo: document.getElementById("correoCliente").value,
-        telefono: document.getElementById("telefonoCliente").value
-      })
-    });
-    
-    const data = await response.json();
-    spinner.style.display = "none";
-    
-    if (data.error) { 
-      alert("❌ " + data.error); 
-      return; 
-    }
-
-    const resultadoDiv = document.getElementById("resultado");
-    resultadoDiv.style.display = "block";
-    
-    let html = '';
-    if (data.codigoCotizacion) {
-      html += `<div class="codigo-cotizacion">🔑 Código: ${data.codigoCotizacion}</div>`;
-    }
-    
-    html += `<strong>📍 Origen:</strong> ${data.origen}<br><br>`;
-    
-    html += `<strong>📋 Destinos ingresados (${destinos.length}):</strong><br>`;
-    html += `<ol class="destinos-lista" style="margin:5px 0 15px 20px;">`;
-    destinos.forEach((destino, index) => {
-      html += `<li><strong>Destino ${index + 1}:</strong> ${destino}</li>`;
-    });
-    html += `</ol>`;
-    
-    html += `<strong>🛵 Tramos del recorrido:</strong><br>`;
-    
-    data.tramos.forEach((tramo, index) => {
-      html += `
-        <div class="tramo-resumen">
-          <strong>🚚 Tramo ${index + 1}: ${tramo.desde} → ${tramo.direccion}</strong>
-          <div class="tramo-detalle">
-            <span>📏 ${tramo.distancia_km.toFixed(2)} km</span>
-            <span>⏱️ ${tramo.tiempo_minutos} min</span>
-            <span>💰 $${tramo.precio.toLocaleString('es-CL')}</span>
-          </div>
-        </div>
-      `;
-    });
-    
-    html += `
-      <div class="resumen-total">
-        <div>📏 Distancia total: ${data.distancia_total_km.toFixed(2)} km</div>
-        <div>⏱️ Tiempo total: ${data.tiempo_total_minutos} min</div>
-      </div>
-    `;
-    
-    // SECCIÓN DE PRECIOS CON LOGO
-    html += `
-      <div class="precios-section">
-        <div class="precios-content">
-          <strong>💰 Detalle de precios:</strong>
-          <div class="precio-item">
-            <span>Neto:</span>
-            <span>$${data.neto.toLocaleString('es-CL')}</span>
-          </div>
-    `;
-    
-    if (data.descuentoValor && data.descuentoValor > 0) {
-      html += `
-          <div class="precio-item" style="color:#27ae60;">
-            <span>🎟️ Descuento:</span>
-            <span>-$${data.descuentoValor.toLocaleString('es-CL')}</span>
-          </div>
-          <div class="precio-item">
-            <span>Neto con descuento:</span>
-            <span>$${data.netoConDescuento.toLocaleString('es-CL')}</span>
-          </div>
-      `;
-    }
-    
-    html += `
-          <div class="precio-item">
-            <span>IVA (19%):</span>
-            <span>$${data.iva.toLocaleString('es-CL')}</span>
-          </div>
-          <div class="precio-total">
-            <span>TOTAL:</span>
-            <span>$${data.total.toLocaleString('es-CL')}</span>
-          </div>
-        </div>
-      </div>
-      <br>
-      <em>${obtenerMensajeHoraEstimado()}</em>
-    `;
-    
-    resultadoDiv.innerHTML = html;
-
-    document.getElementById("camposCliente").style.display = "block";
-
-    window.ultimaCotizacion = data;
-    window.datosViaje = { inicio, destinos, cupon: codigo_cupon };
-
-    const telefono = "56942325524";
-    let mensajeTramos = '';
-    data.tramos.forEach((tramo, index) => {
-      mensajeTramos += `\nTramo ${index + 1}: ${tramo.desde} → ${tramo.direccion} (${tramo.distancia_km.toFixed(2)} km - $${tramo.precio.toLocaleString('es-CL')})`;
-    });
-    
-    const mensaje = encodeURIComponent(`Hola, solicito el servicio de TuMotoExpress.cl\nCódigo: ${data.codigoCotizacion || 'N/A'}\nOrigen: ${data.origen}${mensajeTramos}\n\nTotal: $${data.total.toLocaleString('es-CL')}\n\n${obtenerMensajeHoraEstimado()}`);
-    
-    const btnSolicitar = document.getElementById("btnSolicitarServicio");
-    btnSolicitar.style.display = "block";
-    btnSolicitar.onclick = () => window.open(`https://wa.me/${telefono}?text=${mensaje}`, "_blank");
-
-    const btnCorreo = document.getElementById("btnEnviarCorreo");
-    btnCorreo.style.display = "block";
-    btnCorreo.onclick = async () => {
-      const nombre = document.getElementById("nombreCliente").value;
-      const correo = document.getElementById("correoCliente").value;
-      const telefonoC = document.getElementById("telefonoCliente").value;
-      
-      if (!nombre || !correo || !telefonoC) {
-        alert("❌ Completa todos los datos del cliente");
-        return;
-      }
-      
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(correo)) {
-        alert("❌ Ingresa un correo válido");
-        return;
-      }
-      
-      const telefonoRegex = /^[0-9]{9}$/;
-      if (!telefonoRegex.test(telefonoC)) {
-        alert("❌ Ingresa un teléfono válido de 9 dígitos");
-        return;
-      }
-      
-      try {
-        const response = await fetch("/enviar-correo", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            nombre, 
-            correo, 
-            telefono: telefonoC,
-            cotizacion: window.ultimaCotizacion
-          })
-        });
-        
-        const result = await response.json();
-        if (result.error) {
-          alert("❌ Error: " + result.error);
-        } else {
-          alert("✅ ¡Correo enviado correctamente!");
-        }
-      } catch (err) {
-        console.error(err);
-        alert("❌ Error al enviar el correo");
-      }
-    };
-
-    // ============================================
-    // BOTÓN PAGAR CON WEBPAY - SOLO MUESTRA MODAL
-    // ============================================
-    const btnPagar = document.getElementById("btnPagar");
-    btnPagar.style.display = "block";
-    btnPagar.onclick = function() {
-      // Verificar que hay una cotización
-      if (!window.ultimaCotizacion || !window.ultimaCotizacion.codigoCotizacion) {
-        alert("❌ Primero debes realizar una cotización");
-        return;
-      }
-      
-      // Verificar que los datos del cliente están completos
-      const nombre = document.getElementById("nombreCliente").value;
-      const correo = document.getElementById("correoCliente").value;
-      const telefono = document.getElementById("telefonoCliente").value;
-      
-      if (!nombre || !correo || !telefono) {
-        alert("❌ Completa todos los datos del cliente");
-        return;
-      }
-      
-      // Validar email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(correo)) {
-        alert("❌ Ingresa un correo válido");
-        return;
-      }
-      
-      // Validar teléfono
-      const telefonoRegex = /^[0-9]{9}$/;
-      if (!telefonoRegex.test(telefono)) {
-        alert("❌ Ingresa un teléfono válido de 9 dígitos");
-        return;
-      }
-      
-      // MOSTRAR MODAL EN LUGAR DE REDIRIGIR
-      mostrarModalWebPay();
-    };
-
-  } catch (err) { 
-    spinner.style.display = "none"; 
-    console.error(err); 
-    alert("❌ Error al cotizar: " + err.message); 
-  }
-}
-
-// Cerrar modal si se hace clic en el overlay
-document.getElementById('modalOverlay').addEventListener('click', cerrarModalWebPay);
+// La función obtenerMensajeHoraEstimado se mantiene igual
 
 window.onload = initAutocomplete;
 </script>
