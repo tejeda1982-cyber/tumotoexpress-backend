@@ -386,8 +386,13 @@ app.post("/cotizar", async (req, res) => {
     // CALCULAR PRECIO TOTAL (suma de todos los tramos)
     const precios = calcularPrecioTotal(tramos, cupon || "");
     
-    // Preparar respuesta
+    // 🔑 GENERAR CÓDIGO PARA ESTA COTIZACIÓN
+    const codigoCotizacion = generarCodigoCotizacion();
+    console.log("🔑 Código de cotización generado:", codigoCotizacion);
+    
+    // Preparar respuesta con el código
     const respuesta = {
+      codigoCotizacion: codigoCotizacion,
       origen: inicio,
       tramos: tramos,
       distancia_total_km,
