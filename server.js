@@ -223,7 +223,7 @@ function obtenerMensajeHoraEstimado() {
 
   // Lunes a Viernes antes de las 09:00
   if (dia >= 1 && dia <= 5 && hora < 9) {
-    return `Gracias por cotizar en tumotorexpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos gestionar tu envío para hoy ${diasSemana[dia]} durante la mañana.`;
+    return `Gracias por cotizar en TuMotoExpress.cl, en este momento nos encontramos fuera de horario de atención, pero podemos gestionar tu envío para hoy ${diasSemana[dia]} durante la mañana.`;
   }
 
   // Lunes a Viernes entre 09:00 y 15:40
@@ -240,7 +240,7 @@ function obtenerMensajeHoraEstimado() {
     const horaEst = fechaEstimado.getHours().toString().padStart(2, "0");
     const minEst = fechaEstimado.getMinutes().toString().padStart(2, "0");
 
-    return `Gracias por cotizar en tumotorexpress.cl. Podemos realizar tu envío a partir de las ${horaEst}:${minEst} hrs.`;
+    return `Gracias por cotizar en TuMotoExpress.cl, podemos realizar tu envío a partir de las ${horaEst}:${minEst} hrs.`;
   }
 
   // Lunes a Jueves desde 15:41 en adelante
@@ -253,11 +253,11 @@ function obtenerMensajeHoraEstimado() {
     )
   ) {
     const nombreManana = obtenerMananaNombre();
-    return `Gracias por cotizar en tumotorexpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos agendar tu envío para el día de mañana, ${nombreManana} durante la mañana.`;
+    return `Gracias por cotizar en TuMotoExpress.cl, en este momento nos encontramos fuera de horario de atención, pero podemos agendar tu envío para el día de mañana, ${nombreManana} durante la mañana.`;
   }
 
   // Viernes después de 15:40, sábado y domingo
-  return `Gracias por cotizar en tumotorexpress.cl. En este momento nos encontramos fuera de horario de atención, pero podemos agendar tu envío para el día lunes durante la mañana.`;
+  return `Gracias por cotizar en TuMotoExpress.cl, en este momento nos encontramos fuera de horario de atención, pero podemos agendar tu envío para el día lunes durante la mañana.`;
 }
 // FUNCIÓN PARA GENERAR CÓDIGO ALFANUMÉRICO
 function generarCodigoCotizacion() {
