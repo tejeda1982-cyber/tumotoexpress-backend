@@ -48,9 +48,75 @@ function leerTarifas() {
 let { tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones } = leerTarifas();
 let porcentajeAjuste = 0;
 
-// 🚀 FUNCIÓN CORREGIDA: CALCULAR DISTANCIA Y TIEMPO USANDO ROUTES API
-// SIEMPRE ELIGE LA RUTA MÁS CORTA EN DISTANCIA, SIN IMPORTAR EL TIEMPO
-async function calcularDistanciaYTiempo(origen, destino) {
+// 🔴 NUEVA FUNCIÓN: GEOCODING MEJORADO CON CONTEXTO DE COMUNA
+async function geocodificarDireccion(direccion, comunaSugerida = null) {
+  try {
+    // Si tenemos una comuna sugerida, intentar primero con esa
+    if (comunaSugerida) {
+      const direccionCompleta = `${direccion}, ${comunaSugerida}, Chile`;
+      console.log(`   Intentando geocoding con comuna: "${direccionCompleta}"`);
+      
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(direccionCompleta)}&region=cl&key=${process.env.GOOGLE_MAPS_BACKEND_KEY}`;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      
+      if (data.status === "OK" && data.results.length > 0) {
+        // Verificar que realmente esté en la comuna esperada
+        const result = data.results[0];
+        const addressComponents = result.address_components;
+        let estaEnComunaCorrecta = false;
+        
+        // Buscar si la comuna aparece en los componentes
+        for (const component of addressComponents) {
+          if (component.types.includes("administrative_area_level_3") || 
+              component.types.includes("locality")) {
+            if (component.long_name.toLowerCase().includes(comunaSugerida.toLowerCase())) {
+              estaEnComunaCorrecta = true;
+              break;
+            }
+          }
+        }
+        
+        if (estaEnComunaCorrecta) {
+          console.log(`   ✅ Geocoding exitoso en ${comunaSugerida}`);
+          return {
+            lat: result.geometry.location.lat,
+            lng: result.geometry.location.lng,
+            direccionFormateada: result.formatted_address
+          };
+        } else {
+          console.log(`   ⚠️ La dirección no está en ${comunaSugerida}, intentando sin filtro...`);
+        }
+      }
+    }
+    
+    // Fallback: geocoding normal sin filtro de comuna
+    console.log(`   Intentando geocoding normal: "${direccion}, Chile"`);
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(direccion + ", Chile")}&region=cl&key=${process.env.GOOGLE_MAPS_BACKEND_KEY}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    
+    if (data.status === "OK" && data.results.length > 0) {
+      const result = data.results[0];
+      console.log(`   ✅ Geocoding exitoso: ${result.formatted_address}`);
+      return {
+        lat: result.geometry.location.lat,
+        lng: result.geometry.location.lng,
+        direccionFormateada: result.formatted_address
+      };
+    }
+    
+    console.error(`   ❌ No se pudo geocodificar: ${direccion}`);
+    return null;
+    
+  } catch (err) {
+    console.error(`   ❌ Error en geocoding:`, err.message);
+    return null;
+  }
+}
+
+// 🚀 FUNCIÓN CORREGIDA: CALCULAR DISTANCIA Y TIEMPO USANDO ROUTES API CON GEOCODING PREVIO
+async function calcularDistanciaYTiempo(origen, destino, comunaDestino = null) {
   if (!process.env.GOOGLE_MAPS_BACKEND_KEY) {
     console.error("❌ ERROR: GOOGLE_MAPS_BACKEND_KEY no está configurada");
     return { km: 8.5, minutos: 30 };
@@ -59,30 +125,70 @@ async function calcularDistanciaYTiempo(origen, destino) {
   // URL de Routes API (v2)
   const url = "https://routes.googleapis.com/directions/v2:computeRoutes";
   
-  // Preparar el body para Routes API
-  const requestBody = {
-    origin: {
-      address: origen
-    },
-    destination: {
-      address: destino
-    },
-    travelMode: "DRIVE",
-    // TRAFFIC_UNAWARE para obtener la ruta más corta SIN considerar tráfico
-    // (el tráfico puede hacer que prefiera rutas más rápidas pero más largas)
-    routingPreference: "TRAFFIC_UNAWARE",
-    computeAlternativeRoutes: true,
-    routeModifiers: {
-      avoidTolls: false,
-      avoidHighways: false,
-      avoidFerries: false
-    },
-    languageCode: "es-ES",
-    units: "METRIC"
-  };
-  
   try {
-    console.log(`🔍 Calculando ruta de: "${origen}" a "${destino}" usando Routes API`);
+    console.log(`🔍 Calculando ruta de: "${origen}" a "${destino}"`);
+    
+    // PASO 1: Geocodificar origen (siempre sin filtro)
+    console.log(`📍 Geocodificando origen...`);
+    const origenCoords = await geocodificarDireccion(origen);
+    if (!origenCoords) {
+      console.error(`❌ No se pudo geocodificar el origen`);
+      return { km: 8.5, minutos: 30 };
+    }
+    
+    // PASO 2: Geocodificar destino, extrayendo la comuna si es posible
+    console.log(`📍 Geocodificando destino...`);
+    
+    // Extraer posible comuna del destino (ej: "Manuel Rodríguez 73, Colina, Chile")
+    let comunaDetectada = comunaDestino;
+    if (!comunaDetectada && destino.includes(',')) {
+      const partes = destino.split(',').map(p => p.trim());
+      if (partes.length >= 2) {
+        // La penúltima parte suele ser la comuna en direcciones chilenas
+        comunaDetectada = partes[partes.length - 2];
+      }
+    }
+    
+    const destinoCoords = await geocodificarDireccion(destino, comunaDetectada);
+    if (!destinoCoords) {
+      console.error(`❌ No se pudo geocodificar el destino`);
+      return { km: 8.5, minutos: 30 };
+    }
+    
+    console.log(`   📍 Origen coordenadas: ${origenCoords.lat}, ${origenCoords.lng}`);
+    console.log(`   📍 Destino coordenadas: ${destinoCoords.lat}, ${destinoCoords.lng}`);
+    console.log(`   📍 Origen formateado: ${origenCoords.direccionFormateada}`);
+    console.log(`   📍 Destino formateado: ${destinoCoords.direccionFormateada}`);
+    
+    // PASO 3: Calcular ruta usando coordenadas (más preciso que direcciones)
+    const requestBody = {
+      origin: {
+        location: {
+          latLng: {
+            latitude: origenCoords.lat,
+            longitude: origenCoords.lng
+          }
+        }
+      },
+      destination: {
+        location: {
+          latLng: {
+            latitude: destinoCoords.lat,
+            longitude: destinoCoords.lng
+          }
+        }
+      },
+      travelMode: "DRIVE",
+      routingPreference: "TRAFFIC_UNAWARE", // Para obtener la ruta más corta
+      computeAlternativeRoutes: true,
+      routeModifiers: {
+        avoidTolls: false,
+        avoidHighways: false,
+        avoidFerries: false
+      },
+      languageCode: "es-ES",
+      units: "METRIC"
+    };
     
     const resp = await fetch(url, {
       method: "POST",
@@ -102,146 +208,33 @@ async function calcularDistanciaYTiempo(origen, destino) {
       return { km: 8.5, minutos: 30 };
     }
     
-    // Buscar la ruta con la distancia MÁS CORTA (absolutamente la mínima)
+    // Buscar la ruta con la distancia MÁS CORTA
     if (data.routes && data.routes.length > 0) {
       console.log(`📊 Routes API devolvió ${data.routes.length} rutas:`);
       
-      // Mostrar todas las rutas para debugging
+      // Mostrar todas las rutas
       data.routes.forEach((route, index) => {
         const distancia = parseInt(route.distanceMeters) / 1000;
         const tiempo = route.duration ? parseInt(route.duration.replace("s", "")) / 60 : 0;
         console.log(`   Ruta ${index + 1}: ${distancia.toFixed(2)} km, ${tiempo.toFixed(0)} min`);
       });
       
-      // Encontrar la ruta con la distancia MÍNIMA ABSOLUTA
+      // Encontrar la ruta con la distancia MÍNIMA
       let distanciaMinima = Infinity;
-      let tiempoDelMinimo = 0;
-      let indiceRutaMasCorta = -1;
+      let tiempoMinimo = 0;
       
-      for (let i = 0; i < data.routes.length; i++) {
-        const route = data.routes[i];
+      for (const route of data.routes) {
         const distanciaActual = parseInt(route.distanceMeters || Infinity);
-        
-        // SOLO comparar por distancia, el tiempo es irrelevante para la selección
         if (distanciaActual < distanciaMinima) {
           distanciaMinima = distanciaActual;
-          tiempoDelMinimo = route.duration ? parseInt(route.duration.replace("s", "")) : 0;
-          indiceRutaMasCorta = i;
-        }
-      }
-      
-      // Verificación adicional: si la distancia mínima es sospechosamente grande,
-      // intentar con otra configuración (esto es un fallback)
-      if (distanciaMinima / 1000 > 100 && data.routes.length > 1) {
-        console.warn(`⚠️ Distancia muy larga (${(distanciaMinima/1000).toFixed(2)} km), verificando si hay rutas más cortas...`);
-        
-        // Revisar todas las rutas nuevamente, pero esta vez también considerar
-        // si alguna tiene la etiqueta "ROUTE_LABEL_DEFAULT" (ruta por defecto)
-        for (let i = 0; i < data.routes.length; i++) {
-          const route = data.routes[i];
-          const distanciaActual = parseInt(route.distanceMeters || Infinity);
-          const tieneEtiquetaDefault = route.routeLabels && route.routeLabels.includes("ROUTE_LABEL_DEFAULT");
-          
-          // Si esta ruta es significativamente más corta que la actual mínima
-          if (distanciaActual < distanciaMinima * 0.7) { // 30% más corta
-            console.log(`   ✅ Encontrada ruta mucho más corta: ${(distanciaActual/1000).toFixed(2)} km`);
-            distanciaMinima = distanciaActual;
-            tiempoDelMinimo = route.duration ? parseInt(route.duration.replace("s", "")) : 0;
-          }
-          
-          // Si esta ruta es la default y es razonable, considerarla
-          if (tieneEtiquetaDefault && distanciaActual < distanciaMinima) {
-            console.log(`   ✅ Ruta default encontrada: ${(distanciaActual/1000).toFixed(2)} km`);
-            distanciaMinima = distanciaActual;
-            tiempoDelMinimo = route.duration ? parseInt(route.duration.replace("s", "")) : 0;
-          }
+          tiempoMinimo = route.duration ? parseInt(route.duration.replace("s", "")) : 0;
         }
       }
       
       const km = distanciaMinima / 1000;
-      const minutos = Math.round(tiempoDelMinimo / 60);
+      const minutos = Math.round(tiempoMinimo / 60);
       
-      console.log(`✅ Ruta MÁS CORTA seleccionada: ${km.toFixed(2)} km, ${minutos} min (distancia mínima absoluta)`);
-      
-      // SI LA DISTANCIA SIGUE SIENDO INCORRECTA (mayor a 40km para un trayecto de 28-30km)
-      // USAR UN FACTOR DE CORRECCIÓN TEMPORAL
-      if (km > 40 && km < 100) {
-        console.warn(`⚠️ La distancia (${km.toFixed(2)} km) parece incorrecta. Aplicando factor de corrección...`);
-        
-        // Intentar una segunda llamada con coordenadas en lugar de direcciones
-        // Esto es un fallback por si el geocoding está fallando
-        try {
-          console.log("🔄 Intentando con geocoding previo...");
-          
-          // Primero geocodificar las direcciones
-          const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(origen)}&key=${process.env.GOOGLE_MAPS_BACKEND_KEY}`;
-          const geoResp = await fetch(geocodeUrl);
-          const geoData = await geoResp.json();
-          
-          if (geoData.status === "OK" && geoData.results.length > 0) {
-            const location = geoData.results[0].geometry.location;
-            
-            // Segunda llamada con coordenadas
-            const requestBodyCoords = {
-              origin: {
-                location: {
-                  latLng: {
-                    latitude: location.lat,
-                    longitude: location.lng
-                  }
-                }
-              },
-              destination: {
-                address: destino
-              },
-              travelMode: "DRIVE",
-              routingPreference: "TRAFFIC_UNAWARE",
-              computeAlternativeRoutes: true,
-              languageCode: "es-ES",
-              units: "METRIC"
-            };
-            
-            const resp2 = await fetch(url, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Goog-Api-Key": process.env.GOOGLE_MAPS_BACKEND_KEY,
-                "X-Goog-FieldMask": "routes.distanceMeters,routes.duration"
-              },
-              body: JSON.stringify(requestBodyCoords)
-            });
-            
-            const data2 = await resp2.json();
-            
-            if (data2.routes && data2.routes.length > 0) {
-              // Encontrar la más corta
-              let minDist2 = Infinity;
-              let minTime2 = 0;
-              
-              for (const route of data2.routes) {
-                const dist = parseInt(route.distanceMeters || Infinity);
-                if (dist < minDist2) {
-                  minDist2 = dist;
-                  minTime2 = route.duration ? parseInt(route.duration.replace("s", "")) : 0;
-                }
-              }
-              
-              const km2 = minDist2 / 1000;
-              const minutos2 = Math.round(minTime2 / 60);
-              
-              console.log(`✅ Ruta con coordenadas: ${km2.toFixed(2)} km, ${minutos2} min`);
-              
-              // Si esta distancia es más razonable, usarla
-              if (km2 < km && km2 > 0) {
-                console.log(`✅ Usando distancia de geocoding: ${km2.toFixed(2)} km`);
-                return { km: km2, minutos: minutos2 };
-              }
-            }
-          }
-        } catch (geoErr) {
-          console.error("❌ Error en geocoding fallback:", geoErr.message);
-        }
-      }
+      console.log(`✅ Ruta MÁS CORTA seleccionada: ${km.toFixed(2)} km, ${minutos} min`);
       
       return { km, minutos };
     }
@@ -250,7 +243,7 @@ async function calcularDistanciaYTiempo(origen, destino) {
     return { km: 8.5, minutos: 30 };
     
   } catch (err) {
-    console.error("❌ Error en Routes API:", err.message);
+    console.error("❌ Error en cálculo de distancia:", err.message);
     return { km: 8.5, minutos: 30 };
   }
 }
@@ -275,9 +268,18 @@ async function calcularTramosSecuenciales(origen, destinos) {
     for (let i = 0; i < destinos.length; i++) {
       console.log(`📍 Tramo ${i + 1}: ${puntoAnterior} → ${destinos[i]} (Destino ${i+1})`);
       
-      const { km, minutos } = await calcularDistanciaYTiempo(puntoAnterior, destinos[i]);
+      // Extraer posible comuna del destino actual
+      let comunaDestino = null;
+      if (destinos[i].includes(',')) {
+        const partes = destinos[i].split(',').map(p => p.trim());
+        if (partes.length >= 2) {
+          comunaDestino = partes[partes.length - 2];
+        }
+      }
       
-      // Calcular precio de ESTE TRAMO usando tu fórmula
+      const { km, minutos } = await calcularDistanciaYTiempo(puntoAnterior, destinos[i], comunaDestino);
+      
+      // Calcular precio de ESTE TRAMO
       const precioTramo = calcularPrecioTramo(km);
       
       resultados.push({
@@ -426,7 +428,7 @@ function generarCodigoCotizacion() {
   return codigo;
 }
 
-// 🔴 FUNCIÓN PARA ENVIAR CORREOS - AHORA USA EL MISMO CÓDIGO DE LA COTIZACIÓN
+// 🔴 FUNCIÓN PARA ENVIAR CORREOS
 async function enviarCorreos(cliente, cotizacion) {
   console.log("📧 Iniciando envío de correos...");
   
@@ -453,7 +455,6 @@ async function enviarCorreos(cliente, cotizacion) {
       return false;
     }
 
-    // 🔑 USAR EL CÓDIGO QUE YA VIENE DE LA COTIZACIÓN (NO GENERAR UNO NUEVO)
     const codigoCotizacion = cotizacion.codigoCotizacion;
     console.log("🔑 Usando código de cotización:", codigoCotizacion);
 
@@ -462,7 +463,7 @@ async function enviarCorreos(cliente, cotizacion) {
       return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     };
 
-    // 🔴 GENERAR HTML PARA LOS TRAMOS CON TABLAS (COMPATIBLE OUTLOOK)
+    // Generar HTML para los tramos
     let tramosHtml = '';
     cotizacion.tramos.forEach((tramo) => {
       tramosHtml += `
@@ -558,7 +559,7 @@ async function enviarCorreos(cliente, cotizacion) {
   }
 }
 
-// ENDPOINT COTIZAR - MODIFICADO PARA TRAMOS SECUENCIALES
+// ENDPOINT COTIZAR
 app.post("/cotizar", async (req, res) => {
   console.log("📩 POST /cotizar recibido");
   console.log("📩 Body:", req.body);
@@ -579,14 +580,13 @@ app.post("/cotizar", async (req, res) => {
     // CALCULAR TRAMOS SECUENCIALES
     const { tramos, distancia_total_km, tiempo_total_minutos } = await calcularTramosSecuenciales(inicio, destinos);
     
-    // CALCULAR PRECIO TOTAL (suma de todos los tramos)
+    // CALCULAR PRECIO TOTAL
     const precios = calcularPrecioTotal(tramos, cupon || "");
     
-    // 🔑 GENERAR CÓDIGO PARA ESTA COTIZACIÓN
+    // GENERAR CÓDIGO
     const codigoCotizacion = generarCodigoCotizacion();
     console.log("🔑 Código de cotización generado:", codigoCotizacion);
     
-    // Preparar respuesta con el código
     const respuesta = {
       codigoCotizacion: codigoCotizacion,
       origen: inicio,
@@ -599,7 +599,7 @@ app.post("/cotizar", async (req, res) => {
     console.log("✅ Cotización calculada:");
     console.log(`📍 Origen: ${inicio}`);
     tramos.forEach(t => {
-      console.log(`   Tramo ${t.numero} (Destino ${t.numero}): ${t.desde} → ${t.direccion} = $${t.precio} (${t.distancia_km.toFixed(2)} km)`);
+      console.log(`   Tramo ${t.numero}: ${t.desde} → ${t.direccion} = $${t.precio} (${t.distancia_km.toFixed(2)} km)`);
     });
     console.log(`💰 Total: $${precios.total}`);
 
