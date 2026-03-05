@@ -48,38 +48,70 @@ function leerTarifas() {
 let { tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones } = leerTarifas();
 let porcentajeAjuste = 0;
 
-// FUNCIÓN PARA CALCULAR DISTANCIA Y TIEMPO (siempre la ruta más corta)
+// 🚀 NUEVA FUNCIÓN: CALCULAR DISTANCIA Y TIEMPO USANDO ROUTES API
 async function calcularDistanciaYTiempo(origen, destino) {
   if (!process.env.GOOGLE_MAPS_BACKEND_KEY) {
     console.error("❌ ERROR: GOOGLE_MAPS_BACKEND_KEY no está configurada");
     return { km: 8.5, minutos: 30 };
   }
   
-  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origen)}&destination=${encodeURIComponent(destino)}&region=CL&mode=driving&alternatives=true&key=${process.env.GOOGLE_MAPS_BACKEND_KEY}`;
+  // URL de Routes API (v2)
+  const url = "https://routes.googleapis.com/directions/v2:computeRoutes";
+  
+  // Preparar el body para Routes API
+  const requestBody = {
+    origin: {
+      address: origen
+    },
+    destination: {
+      address: destino
+    },
+    travelMode: "DRIVE",
+    routingPreference: "TRAFFIC_AWARE", // Para considerar tráfico
+    computeAlternativeRoutes: true, // Para obtener rutas alternativas
+    routeModifiers: {
+      avoidTolls: false,
+      avoidHighways: false,
+      avoidFerries: false
+    },
+    languageCode: "es-ES",
+    units: "METRIC"
+  };
   
   try {
-    console.log(`🔍 Calculando ruta de: "${origen}" a "${destino}"`);
-    const resp = await fetch(url);
+    console.log(`🔍 Calculando ruta de: "${origen}" a "${destino}" usando Routes API`);
+    
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": process.env.GOOGLE_MAPS_BACKEND_KEY,
+        "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.routeLabels"
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
     const data = await resp.json();
     
-    if (data.status !== "OK") {
-      console.error("❌ Google Directions API error:", data.error_message || data.status);
+    // Verificar si hay errores
+    if (data.error) {
+      console.error("❌ Routes API error:", data.error.message || data.error.status);
       return { km: 8.5, minutos: 30 };
     }
     
     // Buscar la ruta con la distancia MÁS CORTA
     if (data.routes && data.routes.length > 0) {
       let rutaMasCorta = data.routes[0];
-      let distanciaMinima = rutaMasCorta.legs?.[0]?.distance?.value || Infinity;
-      let tiempoMinimo = rutaMasCorta.legs?.[0]?.duration?.value || 0;
+      let distanciaMinima = parseInt(rutaMasCorta.distanceMeters || Infinity);
+      let tiempoMinimo = rutaMasCorta.duration ? parseInt(rutaMasCorta.duration.replace("s", "")) : 0;
       
       // Si hay múltiples rutas, encontrar la de menor distancia
       if (data.routes.length > 1) {
         for (let i = 1; i < data.routes.length; i++) {
-          const distanciaActual = data.routes[i].legs?.[0]?.distance?.value || Infinity;
+          const distanciaActual = parseInt(data.routes[i].distanceMeters || Infinity);
           if (distanciaActual < distanciaMinima) {
             distanciaMinima = distanciaActual;
-            tiempoMinimo = data.routes[i].legs?.[0]?.duration?.value || 0;
+            tiempoMinimo = data.routes[i].duration ? parseInt(data.routes[i].duration.replace("s", "")) : 0;
           }
         }
       }
@@ -87,13 +119,23 @@ async function calcularDistanciaYTiempo(origen, destino) {
       const km = distanciaMinima / 1000;
       const minutos = Math.round(tiempoMinimo / 60);
       
-      console.log(`✅ Ruta encontrada: ${km.toFixed(2)} km, ${minutos} min`);
+      console.log(`✅ Routes API - Ruta encontrada: ${km.toFixed(2)} km, ${minutos} min`);
+      
+      // Verificar si la distancia es sospechosamente larga (más del doble de lo esperado)
+      // Esto ayuda a detectar errores de geocodificación
+      if (km > 100) {
+        console.warn(`⚠️ Distancia muy larga detectada (${km.toFixed(2)} km). Posible error de geocodificación.`);
+        // Intentar con coordenadas si es posible (esto requeriría geocodificación previa)
+      }
+      
       return { km, minutos };
     }
     
+    console.warn("⚠️ Routes API no devolvió rutas, usando valor por defecto");
     return { km: 8.5, minutos: 30 };
+    
   } catch (err) {
-    console.error("❌ Error en Google Directions API:", err.message);
+    console.error("❌ Error en Routes API:", err.message);
     return { km: 8.5, minutos: 30 };
   }
 }
