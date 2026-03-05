@@ -48,6 +48,37 @@ function leerTarifas() {
 let { tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones } = leerTarifas();
 let porcentajeAjuste = 0;
 
+// 🔥 NUEVOS ENDPOINTS PARA EL PANEL DE ADMINISTRACIÓN 🔥
+// Obtener configuración actual (GET)
+app.get("/config", (req, res) => {
+  res.json({
+    porcentajeAjuste,
+    cupones
+  });
+});
+
+// Actualizar configuración desde el panel (POST)
+app.post("/config", (req, res) => {
+  try {
+    const { nuevoPorcentaje, nuevosCupones } = req.body;
+    
+    if (nuevoPorcentaje !== undefined) {
+      porcentajeAjuste = nuevoPorcentaje;
+      console.log(`📊 Porcentaje de ajuste actualizado a: ${porcentajeAjuste}%`);
+    }
+    
+    if (nuevosCupones) {
+      cupones = nuevosCupones;
+      console.log("🎟️ Cupones actualizados:", cupones);
+    }
+    
+    res.json({ ok: true, message: "Configuración actualizada correctamente" });
+  } catch (error) {
+    console.error("❌ Error actualizando configuración:", error);
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
 // 🔴 NUEVA FUNCIÓN: GEOCODING MEJORADO CON CONTEXTO DE COMUNA
 async function geocodificarDireccion(direccion, comunaSugerida = null) {
   try {
@@ -279,7 +310,7 @@ async function calcularTramosSecuenciales(origen, destinos) {
       
       const { km, minutos } = await calcularDistanciaYTiempo(puntoAnterior, destinos[i], comunaDestino);
       
-      // Calcular precio de ESTE TRAMO
+      // Calcular precio de ESTE TRAMO (AHORA USA PORCENTAJEAJUSTE)
       const precioTramo = calcularPrecioTramo(km);
       
       resultados.push({
@@ -320,15 +351,24 @@ async function calcularTramosSecuenciales(origen, destinos) {
   }
 }
 
-// CALCULA PRECIO DE UN TRAMO INDIVIDUAL
+// CALCULA PRECIO DE UN TRAMO INDIVIDUAL (AHORA INCORPORA PORCENTAJEAJUSTE)
 function calcularPrecioTramo(distancia_km) {
+  let precioBase;
+  
   if (distancia_km <= 6) {
-    return tarifa_base;
+    precioBase = tarifa_base;
   } else if (distancia_km <= 10) {
-    return Math.round(distancia_km * km_adicional_6_10);
+    precioBase = Math.round(distancia_km * km_adicional_6_10);
   } else {
-    return Math.round(distancia_km * km_adicional_10_mas);
+    precioBase = Math.round(distancia_km * km_adicional_10_mas);
   }
+  
+  // APLICAR EL PORCENTAJE DE AJUSTE GLOBAL
+  if (porcentajeAjuste !== 0) {
+    precioBase = Math.round(precioBase * (1 + porcentajeAjuste / 100));
+  }
+  
+  return precioBase;
 }
 
 // CALCULAR PRECIO TOTAL (suma de todos los tramos)
