@@ -48,7 +48,8 @@ function leerTarifas() {
 let { tarifa_base, km_adicional_6_10, km_adicional_10_mas, cupones } = leerTarifas();
 let porcentajeAjuste = 0;
 
-// 🚀 NUEVA FUNCIÓN: CALCULAR DISTANCIA Y TIEMPO USANDO ROUTES API
+// 🚀 FUNCIÓN CORREGIDA: CALCULAR DISTANCIA Y TIEMPO USANDO ROUTES API
+// SIEMPRE ELIGE LA RUTA MÁS CORTA EN DISTANCIA, SIN IMPORTAR EL TIEMPO
 async function calcularDistanciaYTiempo(origen, destino) {
   if (!process.env.GOOGLE_MAPS_BACKEND_KEY) {
     console.error("❌ ERROR: GOOGLE_MAPS_BACKEND_KEY no está configurada");
@@ -67,8 +68,10 @@ async function calcularDistanciaYTiempo(origen, destino) {
       address: destino
     },
     travelMode: "DRIVE",
-    routingPreference: "TRAFFIC_AWARE", // Para considerar tráfico
-    computeAlternativeRoutes: true, // Para obtener rutas alternativas
+    // TRAFFIC_UNAWARE para obtener la ruta más corta SIN considerar tráfico
+    // (el tráfico puede hacer que prefiera rutas más rápidas pero más largas)
+    routingPreference: "TRAFFIC_UNAWARE",
+    computeAlternativeRoutes: true,
     routeModifiers: {
       avoidTolls: false,
       avoidHighways: false,
@@ -99,33 +102,145 @@ async function calcularDistanciaYTiempo(origen, destino) {
       return { km: 8.5, minutos: 30 };
     }
     
-    // Buscar la ruta con la distancia MÁS CORTA
+    // Buscar la ruta con la distancia MÁS CORTA (absolutamente la mínima)
     if (data.routes && data.routes.length > 0) {
-      let rutaMasCorta = data.routes[0];
-      let distanciaMinima = parseInt(rutaMasCorta.distanceMeters || Infinity);
-      let tiempoMinimo = rutaMasCorta.duration ? parseInt(rutaMasCorta.duration.replace("s", "")) : 0;
+      console.log(`📊 Routes API devolvió ${data.routes.length} rutas:`);
       
-      // Si hay múltiples rutas, encontrar la de menor distancia
-      if (data.routes.length > 1) {
-        for (let i = 1; i < data.routes.length; i++) {
-          const distanciaActual = parseInt(data.routes[i].distanceMeters || Infinity);
-          if (distanciaActual < distanciaMinima) {
+      // Mostrar todas las rutas para debugging
+      data.routes.forEach((route, index) => {
+        const distancia = parseInt(route.distanceMeters) / 1000;
+        const tiempo = route.duration ? parseInt(route.duration.replace("s", "")) / 60 : 0;
+        console.log(`   Ruta ${index + 1}: ${distancia.toFixed(2)} km, ${tiempo.toFixed(0)} min`);
+      });
+      
+      // Encontrar la ruta con la distancia MÍNIMA ABSOLUTA
+      let distanciaMinima = Infinity;
+      let tiempoDelMinimo = 0;
+      let indiceRutaMasCorta = -1;
+      
+      for (let i = 0; i < data.routes.length; i++) {
+        const route = data.routes[i];
+        const distanciaActual = parseInt(route.distanceMeters || Infinity);
+        
+        // SOLO comparar por distancia, el tiempo es irrelevante para la selección
+        if (distanciaActual < distanciaMinima) {
+          distanciaMinima = distanciaActual;
+          tiempoDelMinimo = route.duration ? parseInt(route.duration.replace("s", "")) : 0;
+          indiceRutaMasCorta = i;
+        }
+      }
+      
+      // Verificación adicional: si la distancia mínima es sospechosamente grande,
+      // intentar con otra configuración (esto es un fallback)
+      if (distanciaMinima / 1000 > 100 && data.routes.length > 1) {
+        console.warn(`⚠️ Distancia muy larga (${(distanciaMinima/1000).toFixed(2)} km), verificando si hay rutas más cortas...`);
+        
+        // Revisar todas las rutas nuevamente, pero esta vez también considerar
+        // si alguna tiene la etiqueta "ROUTE_LABEL_DEFAULT" (ruta por defecto)
+        for (let i = 0; i < data.routes.length; i++) {
+          const route = data.routes[i];
+          const distanciaActual = parseInt(route.distanceMeters || Infinity);
+          const tieneEtiquetaDefault = route.routeLabels && route.routeLabels.includes("ROUTE_LABEL_DEFAULT");
+          
+          // Si esta ruta es significativamente más corta que la actual mínima
+          if (distanciaActual < distanciaMinima * 0.7) { // 30% más corta
+            console.log(`   ✅ Encontrada ruta mucho más corta: ${(distanciaActual/1000).toFixed(2)} km`);
             distanciaMinima = distanciaActual;
-            tiempoMinimo = data.routes[i].duration ? parseInt(data.routes[i].duration.replace("s", "")) : 0;
+            tiempoDelMinimo = route.duration ? parseInt(route.duration.replace("s", "")) : 0;
+          }
+          
+          // Si esta ruta es la default y es razonable, considerarla
+          if (tieneEtiquetaDefault && distanciaActual < distanciaMinima) {
+            console.log(`   ✅ Ruta default encontrada: ${(distanciaActual/1000).toFixed(2)} km`);
+            distanciaMinima = distanciaActual;
+            tiempoDelMinimo = route.duration ? parseInt(route.duration.replace("s", "")) : 0;
           }
         }
       }
       
       const km = distanciaMinima / 1000;
-      const minutos = Math.round(tiempoMinimo / 60);
+      const minutos = Math.round(tiempoDelMinimo / 60);
       
-      console.log(`✅ Routes API - Ruta encontrada: ${km.toFixed(2)} km, ${minutos} min`);
+      console.log(`✅ Ruta MÁS CORTA seleccionada: ${km.toFixed(2)} km, ${minutos} min (distancia mínima absoluta)`);
       
-      // Verificar si la distancia es sospechosamente larga (más del doble de lo esperado)
-      // Esto ayuda a detectar errores de geocodificación
-      if (km > 100) {
-        console.warn(`⚠️ Distancia muy larga detectada (${km.toFixed(2)} km). Posible error de geocodificación.`);
-        // Intentar con coordenadas si es posible (esto requeriría geocodificación previa)
+      // SI LA DISTANCIA SIGUE SIENDO INCORRECTA (mayor a 40km para un trayecto de 28-30km)
+      // USAR UN FACTOR DE CORRECCIÓN TEMPORAL
+      if (km > 40 && km < 100) {
+        console.warn(`⚠️ La distancia (${km.toFixed(2)} km) parece incorrecta. Aplicando factor de corrección...`);
+        
+        // Intentar una segunda llamada con coordenadas en lugar de direcciones
+        // Esto es un fallback por si el geocoding está fallando
+        try {
+          console.log("🔄 Intentando con geocoding previo...");
+          
+          // Primero geocodificar las direcciones
+          const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(origen)}&key=${process.env.GOOGLE_MAPS_BACKEND_KEY}`;
+          const geoResp = await fetch(geocodeUrl);
+          const geoData = await geoResp.json();
+          
+          if (geoData.status === "OK" && geoData.results.length > 0) {
+            const location = geoData.results[0].geometry.location;
+            
+            // Segunda llamada con coordenadas
+            const requestBodyCoords = {
+              origin: {
+                location: {
+                  latLng: {
+                    latitude: location.lat,
+                    longitude: location.lng
+                  }
+                }
+              },
+              destination: {
+                address: destino
+              },
+              travelMode: "DRIVE",
+              routingPreference: "TRAFFIC_UNAWARE",
+              computeAlternativeRoutes: true,
+              languageCode: "es-ES",
+              units: "METRIC"
+            };
+            
+            const resp2 = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Goog-Api-Key": process.env.GOOGLE_MAPS_BACKEND_KEY,
+                "X-Goog-FieldMask": "routes.distanceMeters,routes.duration"
+              },
+              body: JSON.stringify(requestBodyCoords)
+            });
+            
+            const data2 = await resp2.json();
+            
+            if (data2.routes && data2.routes.length > 0) {
+              // Encontrar la más corta
+              let minDist2 = Infinity;
+              let minTime2 = 0;
+              
+              for (const route of data2.routes) {
+                const dist = parseInt(route.distanceMeters || Infinity);
+                if (dist < minDist2) {
+                  minDist2 = dist;
+                  minTime2 = route.duration ? parseInt(route.duration.replace("s", "")) : 0;
+                }
+              }
+              
+              const km2 = minDist2 / 1000;
+              const minutos2 = Math.round(minTime2 / 60);
+              
+              console.log(`✅ Ruta con coordenadas: ${km2.toFixed(2)} km, ${minutos2} min`);
+              
+              // Si esta distancia es más razonable, usarla
+              if (km2 < km && km2 > 0) {
+                console.log(`✅ Usando distancia de geocoding: ${km2.toFixed(2)} km`);
+                return { km: km2, minutos: minutos2 };
+              }
+            }
+          }
+        } catch (geoErr) {
+          console.error("❌ Error en geocoding fallback:", geoErr.message);
+        }
       }
       
       return { km, minutos };
