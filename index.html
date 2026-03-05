@@ -762,10 +762,13 @@ async function cotizar() {
           </div>
     `;
     
+    // 🔥 SOLO ESTA PARTE FUE MODIFICADA 🔥
     if (data.descuentoValor && data.descuentoValor > 0) {
+      // Calculamos el porcentaje de descuento
+      const porcentajeDescuento = Math.round((data.descuentoValor / data.neto) * 100);
       html += `
           <div class="precio-item" style="color:#27ae60;">
-            <span>🎟️ Descuento:</span>
+            <span>Dscto. ${codigo_cupon} -${porcentajeDescuento}%:</span>
             <span>-$${data.descuentoValor.toLocaleString('es-CL')}</span>
           </div>
           <div class="precio-item">
