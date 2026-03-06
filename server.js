@@ -468,7 +468,76 @@ function generarCodigoCotizacion() {
   return codigo;
 }
 
-// 🔴 FUNCIÓN PARA ENVIAR CORREOS
+// ===== FUNCIONES AGREGADAS PARA MAPA ESTÁTICO EN CORREOS =====
+async function obtenerCoordenadasParaMapa(direccion) {
+  try {
+    console.log(`📍 Obteniendo coordenadas para mapa: "${direccion}"`);
+    
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(direccion + ", Chile")}&region=cl&key=${process.env.GOOGLE_MAPS_BACKEND_KEY}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    
+    if (data.status === "OK" && data.results.length > 0) {
+      const result = data.results[0];
+      const coords = `${result.geometry.location.lat},${result.geometry.location.lng}`;
+      console.log(`   ✅ Coordenadas obtenidas: ${coords}`);
+      return coords;
+    }
+    
+    console.warn(`   ⚠️ No se pudieron obtener coordenadas para: ${direccion}`);
+    return "-33.4489,-70.6693"; // Default Santiago
+    
+  } catch (err) {
+    console.error(`   ❌ Error obteniendo coordenadas:`, err.message);
+    return "-33.4489,-70.6693"; // Default Santiago
+  }
+}
+
+async function generarUrlMapaEstatico(origen, destinos) {
+  try {
+    console.log("🗺️ Generando URL de mapa estático para correo");
+    
+    // Obtener coordenadas de origen
+    const origenCoords = await obtenerCoordenadasParaMapa(origen);
+    
+    // Obtener coordenadas de cada destino
+    const destinosCoords = [];
+    for (let i = 0; i < destinos.length; i++) {
+      const coords = await obtenerCoordenadasParaMapa(destinos[i]);
+      destinosCoords.push(coords);
+    }
+    
+    // Construir la URL del mapa estático
+    let url = "https://maps.googleapis.com/maps/api/staticmap?maptype=roadmap&size=600x300&path=color:0xff4500|weight:5|";
+    
+    // Agregar todos los puntos al path (origen + destinos en orden)
+    url += origenCoords;
+    destinosCoords.forEach(coords => {
+      url += `|${coords}`;
+    });
+    
+    // Agregar marcador de origen (ROJO con letra A)
+    url += `&markers=color:red|label:A|${origenCoords}`;
+    
+    // Agregar marcadores de destino (AZUL con números 1,2,3...)
+    destinosCoords.forEach((coords, index) => {
+      url += `&markers=color:blue|label:${index + 1}|${coords}`;
+    });
+    
+    // Agregar API key
+    url += `&key=${process.env.GOOGLE_MAPS_BACKEND_KEY}`;
+    
+    console.log("   ✅ URL de mapa estático generada");
+    return url;
+    
+  } catch (err) {
+    console.error("❌ Error generando mapa estático:", err.message);
+    return null;
+  }
+}
+// ============================================================
+
+// 🔴 FUNCIÓN PARA ENVIAR CORREOS (ACTUALIZADA CON MAPA ESTÁTICO)
 async function enviarCorreos(cliente, cotizacion) {
   console.log("📧 Iniciando envío de correos...");
   
@@ -494,6 +563,12 @@ async function enviarCorreos(cliente, cotizacion) {
       console.error("❌ No se encuentra correotemplate.html");
       return false;
     }
+
+    // ===== GENERAR URL DEL MAPA ESTÁTICO =====
+    console.log("🗺️ Generando mapa estático para el correo...");
+    const mapaUrl = await generarUrlMapaEstatico(cotizacion.origen, cotizacion.tramos.map(t => t.direccion));
+    console.log(`   URL del mapa: ${mapaUrl ? "✅ Generada" : "❌ Falló"}`);
+    // ==========================================
 
     const codigoCotizacion = cotizacion.codigoCotizacion;
     console.log("🔑 Usando código de cotización:", codigoCotizacion);
@@ -561,7 +636,8 @@ async function enviarCorreos(cliente, cotizacion) {
       .replace(/{{iva}}/g, formatearNumero(cotizacion.iva))
       .replace(/{{total}}/g, formatearNumero(cotizacion.total))
       .replace(/{{mensajeHorario}}/g, obtenerMensajeHoraEstimado())
-      .replace(/{{whatsappLink}}/g, whatsappLink);
+      .replace(/{{whatsappLink}}/g, whatsappLink)
+      .replace(/{{mapaEstaticoUrl}}/g, mapaUrl || ""); // ← AGREGADO: URL del mapa estático
 
     // Procesar descuento condicional
     if (cotizacion.descuentoValor && cotizacion.descuentoValor > 0) {
