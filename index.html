@@ -584,7 +584,7 @@ button:active { transform: translateY(0); }
   <div id="mapa-container">
     <div id="mapa-titulo">
       <span>🗺️</span>
-      <span>Ruta de entrega</span>
+      <span id="mapa-titulo-texto">Ruta de entrega</span>
     </div>
     <div id="map"></div>
     <div class="map-legend">
@@ -594,7 +594,7 @@ button:active { transform: translateY(0); }
       </div>
       <div class="legend-item">
         <div class="legend-color destino"></div>
-        <span>Destinos (1,2,3...)</span>
+        <span id="legend-destinos-texto">Destino</span>
       </div>
       <div class="legend-item">
         <div class="legend-color ruta"></div>
@@ -764,15 +764,15 @@ function obtenerMensajeHoraEstimado() {
 
 }
 
-// ===== VARIABLES GLOBALES PARA EL MAPA (AGREGADAS) =====
+// ===== VARIABLES GLOBALES PARA EL MAPA =====
 let map;
 let directionsService;
 let directionsRenderer;
 let geocoder;
 let mapMarkers = [];
-// =====================================================
+// ===========================================
 
-// ===== FUNCIONES DEL MAPA (AGREGADAS) =====
+// ===== FUNCIONES DEL MAPA =====
 function initMap() {
   geocoder = new google.maps.Geocoder();
   
@@ -813,6 +813,11 @@ async function mostrarRutaEnMapa(origen, destinos) {
   const mapaContainer = document.getElementById('mapa-container');
   mapaContainer.style.display = 'block';
   
+  // ===== ÚNICA MODIFICACIÓN: actualizar leyenda según cantidad de destinos =====
+  const legendDestinos = document.getElementById('legend-destinos-texto');
+  legendDestinos.textContent = destinos.length === 1 ? 'Destino' : 'Destinos';
+  // ============================================================================
+  
   // Hacer scroll suave hacia el mapa
   setTimeout(() => {
     mapaContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -822,7 +827,7 @@ async function mostrarRutaEnMapa(origen, destinos) {
     // Geocodificar origen
     const origenCoords = await geocodificarDireccion(origen);
     
-    // Crear marcador de origen (ROJO como pediste)
+    // Crear marcador de origen (ROJO)
     const markerOrigen = new google.maps.Marker({
       position: origenCoords,
       map: map,
@@ -1016,9 +1021,7 @@ async function cotizar() {
           </div>
     `;
     
-    // 🔥 SOLO ESTA PARTE FUE MODIFICADA 🔥
     if (data.descuentoValor && data.descuentoValor > 0) {
-      // Calculamos el porcentaje de descuento
       const porcentajeDescuento = Math.round((data.descuentoValor / data.neto) * 100);
       html += `
           <div class="precio-item" style="color:#27ae60;">
@@ -1054,14 +1057,12 @@ async function cotizar() {
     window.ultimaCotizacion = data;
     window.datosViaje = { inicio, destinos, cupon: codigo_cupon };
 
-    // ===== MOSTRAR EL MAPA CON LAS DIRECCIONES (AGREGADO) =====
-    // Inicializar mapa si no existe
+    // ===== MOSTRAR EL MAPA CON LAS DIRECCIONES =====
     if (!map) {
       initMap();
     }
-    // Mostrar la ruta con las direcciones ingresadas
     mostrarRutaEnMapa(inicio, destinos);
-    // =========================================================
+    // ===============================================
 
     const telefono = "56942325524";
     let mensajeTramos = '';
@@ -1069,7 +1070,6 @@ async function cotizar() {
       mensajeTramos += `\nTramo ${index + 1}: ${tramo.desde} → ${tramo.direccion} (${tramo.distancia_km.toFixed(2)} km - $${tramo.precio.toLocaleString('es-CL')})`;
     });
     
-    // EL CÓDIGO DEL BACK-END SE INCLUYE EN EL MENSAJE DE WHATSAPP
     const mensaje = encodeURIComponent(`Hola, solicito el servicio de TuMotoExpress.cl\nCódigo: ${data.codigoCotizacion || 'N/A'}\nOrigen: ${data.origen}${mensajeTramos}\n\nTotal: $${data.total.toLocaleString('es-CL')}\n\n${obtenerMensajeHoraEstimado()}`);
     
     const btnSolicitar = document.getElementById("btnSolicitarServicio");
